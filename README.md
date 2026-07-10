@@ -1,6 +1,6 @@
 # KeffiRooms
 
-NSUK student housing platform — verified lodges, agent listings, admin trust controls.
+Verified student housing platform with trust-capture technology — NSUK lodges, agent listings, admin trust controls.
 
 ## Quick Start
 
