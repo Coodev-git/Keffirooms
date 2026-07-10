@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>KeffiRooms — Admin Control Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/admin.css">
+<style>
+[data-theme="dark"]{--bg:#0A0A0A;--bg2:#111;--bg3:#161616;--bg4:#1C1C1C;--card:#141414;--t1:#fff;--t2:rgba(255,255,255,.75);--t3:rgba(255,255,255,.45);--t4:rgba(255,255,255,.25);--t5:rgba(255,255,255,.1);--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);--sh:0 4px 24px rgba(0,0,0,.45);--sh-lg:0 12px 48px rgba(0,0,0,.55);}
+[data-theme="light"]{--bg:#F4F7F6;--bg2:#fff;--bg3:#EEF2F0;--bg4:#E4EAE8;--card:#fff;--t1:#0A1816;--t2:#1A3330;--t3:#2D4A45;--t4:#4A6B65;--t5:rgba(13,31,28,.1);--border:rgba(13,31,28,.12);--border2:rgba(13,31,28,.2);--sh:0 4px 24px rgba(13,31,28,.1);--sh-lg:0 12px 48px rgba(13,31,28,.14);--teal-l:#0B7A70;--gold-l:#9A5E20;}
+
+/* KPI LEDGER */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 14px;}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-xl);padding:16px;animation:slideUp 300ms var(--ease) both;transition:border-color 200ms,transform 200ms;}
+.kpi-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.kpi-card:nth-child(1){animation-delay:40ms;}
+.kpi-card:nth-child(2){animation-delay:90ms;}
+.kpi-card:nth-child(3){animation-delay:140ms;}
+.kpi-card:nth-child(4){animation-delay:190ms;}
+.kpi-lbl{font-size:.65rem;color:var(--t3);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;}
+.kpi-n{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;line-height:1;animation:countUp 500ms var(--ease) both;}
+.kpi-n.t{color:var(--teal-l);}
+.kpi-n.g{color:var(--gold-l);}
+.kpi-n.em{color:var(--em);}
+.kpi-n.w{color:var(--t1);}
+.kpi-sub{font-size:.68rem;color:var(--t3);margin-top:4px;}
+.kpi-sub .up{color:var(--teal-l);font-weight:600;}
+.kpi-sub .dn{color:var(--red);font-weight:600;}
+
+/* SAVED VOLUME INDICATOR */
+.saved-volume{background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(13,148,136,.08));border:1px solid var(--em-b);border-radius:var(--r-xl);margin:0 16px 14px;padding:18px;animation:slideUp 300ms var(--ease) 60ms both;}
+.sv-title{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;color:var(--em);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+.sv-title .ms{font-size:1rem;}
+.sv-amount{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--t1);margin-bottom:4px;}
+.sv-sub{font-size:.74rem;color:var(--t3);line-height:1.5;}
+
+/* LIVE ACTIVITY LOG */
+.activity-log{margin:0 16px 14px;}
+.activity-item{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);animation:slideLeft 240ms var(--ease) both;}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.activity-dot.t{background:var(--teal-l);}
+.activity-dot.g{background:var(--gold-l);}
+.activity-dot.r{background:var(--red);}
+.activity-dot.em{background:var(--em);}
+.activity-text{font-size:.78rem;color:var(--t2);line-height:1.5;flex:1;}
+.activity-time{font-size:.66rem;color:var(--t4);flex-shrink:0;margin-top:1px;font-family:'JetBrains Mono',monospace;}
+
+/* BAN/ALERT SYSTEM */
+.ban-card{background:var(--red-p);border:1px solid var(--red-b);border-radius:var(--r-xl);margin:0 16px 14px;padding:14px;animation:slideUp 280ms var(--ease) both;}
+.ban-title{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;color:var(--red);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.ban-title .ms{font-size:.9rem;}
+.ban-item{display:flex;align-items:center;gap:8px;font-size:.76rem;color:var(--t2);margin-bottom:6px;}
+.ban-item .ms{font-size:.88rem;color:var(--red);}
+.btn-ban{background:var(--red);color:white;padding:7px 14px;border-radius:var(--r-sm);font-family:'Syne',sans-serif;font-size:.76rem;font-weight:700;transition:all 160ms;display:inline-flex;align-items:center;gap:4px;margin-top:8px;}
+.btn-ban:hover{background:#FF6B6B;}
+.btn-ban .ms{font-size:.82rem;}
+
+/* COORDINATOR FEE TRACKER */
+.fee-tracker{background:var(--gold-p);border:1px solid var(--gold-b);border-radius:var(--r-xl);margin:0 16px 14px;padding:16px;animation:slideUp 300ms var(--ease) 80ms both;}
+.ft-title{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;color:var(--gold-l);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.ft-title .ms{font-size:1rem;}
+.ft-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.78rem;}
+.ft-lbl{color:var(--t3);}
+.ft-val{font-family:'Syne',sans-serif;font-weight:700;color:var(--t1);}
+.ft-divider{height:1px;background:var(--gold-b);margin:10px 0;}
+.ft-total-lbl{font-size:.78rem;color:var(--gold-l);font-weight:600;}
+.ft-total-val{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:var(--gold-l);}
+.btn-collect{width:100%;background:var(--gold);color:white;padding:11px;border-radius:var(--r-lg);font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;transition:all 180ms;box-shadow:0 3px 12px rgba(201,134,58,.3);margin-top:12px;}
+.btn-collect:hover{background:var(--gold-l);transform:translateY(-1px);}
+.btn-collect .ms{font-size:1rem;}
+</style>
+</head>
+<body>
+
+<div id="sadm">
+  <div class="app">
+
+    <!-- TOPBAR -->
+    <nav class="appbar">
+      <div class="appbar-brand">
+        <div class="appbar-logo"><span class="material-symbols-rounded ms" style="font-size:1rem;color:white;">admin_panel_settings</span></div>
+        <div class="appbar-name">KEFFI<span class="r">ROOMS</span></div>
+      </div>
+      <div class="appbar-right">
+        <div id="dual-role-switcher" class="dual-role-switcher">
+          <button type="button" class="role-switch-btn" data-portal="agent">
+            <span class="material-symbols-rounded">home_work</span> Agent
+          </button>
+          <button type="button" class="role-switch-btn admin on" data-portal="admin">
+            <span class="material-symbols-rounded">admin_panel_settings</span> Admin
+          </button>
+        </div>
+        <div class="mode-chip"><div class="dot v"></div><span id="portal-mode-lbl">Admin Mode</span></div>
+        <button class="signout-btn" onclick="toggleTheme()">
+          <span class="material-symbols-rounded ms" style="font-size:.9rem;" id="theme-icon">dark_mode</span>
+        </button>
+        <button class="signout-btn" onclick="signOut()">
+          <span class="material-symbols-rounded ms" style="font-size:.9rem;">logout</span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="app-body">
+      <!-- ADMIN HERO -->
+      <div class="admin-hero">
+        <div class="breadcrumb">
+          <button class="bc-btn" id="adm-exit-btn" onclick="goPage('index.html')">
+            <span class="material-symbols-rounded ms" style="font-size:.85rem;">arrow_back</span> Exit Panel
+          </button>
+          <span class="bc-sep">/</span>
+          <span class="bc-cur" id="adm-bc-cur">NSUK Verification Admin</span>
+        </div>
+        <div id="dual-role-badge" class="dual-role-badge" style="margin-bottom:10px;"></div>
+        <div class="adm-title">Trust &amp;<br>Security<br>Control<br>Center</div>
+        <div class="adm-sub">Validate physical student housing conditions, prevent listings scam, and manage verified badges for Keffi student communities.</div>
+      </div>
+
+      <!-- TABS -->
+      <div class="adm-tabs">
+        <button class="adm-tab on" onclick="admTab('queue',this)">
+          <span class="material-symbols-rounded ms" style="font-size:.85rem;">gavel</span>
+          Pending Queue <span class="tab-n" id="tc-q">0</span>
+        </button>
+        <button class="adm-tab" onclick="admTab('kpi',this)">
+          <span class="material-symbols-rounded ms" style="font-size:.85rem;">bar_chart</span>
+          KPI Ledger
+        </button>
+        <button class="adm-tab" onclick="admTab('agents',this)">
+          <span class="material-symbols-rounded ms" style="font-size:.85rem;">group</span>
+          Agents <span class="tab-n gold" id="tc-ag">0</span>
+        </button>
+        <button class="adm-tab" onclick="admTab('activity',this)">
+          <span class="material-symbols-rounded ms" style="font-size:.85rem;">timeline</span>
+          Live Activity
+        </button>
+        <button class="adm-tab" onclick="admTab('fees',this)">
+          <span class="material-symbols-rounded ms" style="font-size:.85rem;">payments</span>
+          Fee Tracker
+        </button>
+        <button class="adm-tab" onclick="admTab('all',this)">
+          <span class="material-symbols-rounded ms" style="font-size:.85rem;">list_alt</span>
+          All Listings
+        </button>
+      </div>
+
+      <!-- PENDING QUEUE PANEL -->
+      <div id="adm-panel-queue" class="adm-panel on">
+        <div class="pq-header">
+          <div class="pqh-icon">
+            <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--gold-l);">gavel</span>
+          </div>
+          <div class="pqh-title">Pending Verification Application Queue</div>
+        </div>
+        <div id="pq-list"></div>
+        <!-- TRUST STATISTICS -->
+        <div class="trust-stats-card">
+          <div class="tsc-title">Trust Statistics</div>
+          <div class="tsc-row">
+            <div class="tsc-row-hdr">
+              <span class="tsc-lbl">Verified Platform Lodges</span>
+              <span class="tsc-n" id="ts-verified">0</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill t" id="ts-ver-bar" style="width:0%"></div></div>
+          </div>
+          <div class="tsc-row">
+            <div class="tsc-row-hdr">
+              <span class="tsc-lbl">Unverified Pending Queue</span>
+              <span class="tsc-n" style="color:var(--gold-l);" id="ts-pending">0</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill g" id="ts-pnd-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <!-- VERIFICATION RULES -->
+        <div class="vr-card">
+          <div class="vr-title">Verification Rules</div>
+          <div class="vr-sub">To earn the verified status seal, KeffiRooms inspectors verify:</div>
+          <div class="vr-list">
+            <div class="vr-item"><div class="vr-dot"></div>Availability of regular clean water source.</div>
+            <div class="vr-item"><div class="vr-dot"></div>Working functional private electric prepaid meters.</div>
+            <div class="vr-item"><div class="vr-dot"></div>Safe and secure external compound gates.</div>
+            <div class="vr-item"><div class="vr-dot"></div>Authentication of local ownership deeds.</div>
+            <div class="vr-item"><div class="vr-dot"></div>GPS-verified photo evidence with device metadata.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI LEDGER PANEL -->
+      <div id="adm-panel-kpi" class="adm-panel">
+        <div class="sub-hdr" style="padding-top:14px;">
+          <span class="material-symbols-rounded ms" style="font-size:.75rem;">savings</span>
+          Saved Volume Indicator
+        </div>
+        <div class="saved-volume">
+          <div class="sv-title">
+            <span class="material-symbols-rounded ms">shield_with_heart</span>
+            Total Value Safely Coordinated
+          </div>
+          <div class="sv-amount" id="sv-amount">₦0</div>
+          <div class="sv-sub">Estimated value of transactions safely verified through coordinated efforts. Zero blind transfers recorded.</div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-lbl">Total Listings</div>
+            <div class="kpi-n w" id="kpi-total">0</div>
+            <div class="kpi-sub">Platform submissions</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-lbl">Verified</div>
+            <div class="kpi-n em" id="kpi-verified">0</div>
+            <div class="kpi-sub"><span class="up">Live on platform</span></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-lbl">Active Agents</div>
+            <div class="kpi-n t" id="kpi-agents">0</div>
+            <div class="kpi-sub">Approved &amp; vetted</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-lbl">Students Served</div>
+            <div class="kpi-n g" id="kpi-seekers">0</div>
+            <div class="kpi-sub">Registered seekers</div>
+          </div>
+        </div>
+        <!-- BAN/ALERT SYSTEM -->
+        <div class="sub-hdr">
+          <span class="material-symbols-rounded ms" style="font-size:.75rem;">warning</span>
+          Bans &amp; Alerts
+        </div>
+        <div class="ban-card" id="ban-section">
+          <div class="ban-title">
+            <span class="material-symbols-rounded ms">gpp_bad</span>
+            Agent Accountability System
+          </div>
+          <div class="ban-item">
+            <span class="material-symbols-rounded ms">block</span>
+            Agents demanding off-platform payment are permanently banned
+          </div>
+          <div class="ban-item">
+            <span class="material-symbols-rounded ms">report</span>
+            False structural data triggers automatic account suspension
+          </div>
+          <div class="ban-item">
+            <span class="material-symbols-rounded ms">phone_locked</span>
+            Blacklisted phone numbers cannot re-register
+          </div>
+          <div id="banned-agents-list" style="margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <!-- AGENTS PANEL -->
+      <div id="adm-panel-agents" class="adm-panel">
+        <div style="margin:14px 16px 0;padding:12px 14px;border-radius:var(--r);background:rgba(13,148,136,.08);border:1px solid rgba(13,148,136,.2);font-size:.74rem;color:var(--t2);line-height:1.6;">
+          Contact applicants via <strong>WhatsApp</strong> or <strong>email</strong> before approving. Agents must register with their active WhatsApp number.
+        </div>
+        <div class="sub-hdr" style="padding-top:14px;">
+          <span class="material-symbols-rounded ms" style="font-size:.75rem;">pending</span>
+          Awaiting Approval
+        </div>
+        <div id="adm-agent-pending" class="agent-req-list" style="padding:0 16px;"></div>
+        <div class="sub-hdr">
+          <span class="material-symbols-rounded ms" style="font-size:.75rem;">verified</span>
+          Approved Agents
+        </div>
+        <div id="adm-agent-approved" class="agent-req-list" style="padding:0 16px;"></div>
+      </div>
+
+      <!-- LIVE ACTIVITY PANEL -->
+      <div id="adm-panel-activity" class="adm-panel">
+        <div class="sub-hdr" style="padding-top:14px;">
+          <span class="material-symbols-rounded ms" style="font-size:.75rem;">stream</span>
+          Live Activity Log
+        </div>
+        <div class="activity-log" id="activity-log"></div>
+      </div>
+
+      <!-- FEE TRACKER PANEL -->
+      <div id="adm-panel-fees" class="adm-panel">
+        <div class="sub-hdr" style="padding-top:14px;">
+          <span class="material-symbols-rounded ms" style="font-size:.75rem;">payments</span>
+          Coordination Fee Tracker
+        </div>
+        <div class="fee-tracker">
+          <div class="ft-title">
+            <span class="material-symbols-rounded ms">account_balance_wallet</span>
+            KeffiRooms Coordination Earnings
+          </div>
+          <div class="ft-row"><span class="ft-lbl">Successful Connections</span><span class="ft-val" id="ft-connections">0</span></div>
+          <div class="ft-row"><span class="ft-lbl">Seeker Fee</span><span class="ft-val" id="ft-seeker-fee">₦2,000</span></div>
+          <div class="ft-row"><span class="ft-lbl">Agent Fee</span><span class="ft-val" id="ft-agent-fee">₦5,000</span></div>
+          <div class="ft-row"><span class="ft-lbl">Total per Connection</span><span class="ft-val" id="ft-per-connection">₦7,000</span></div>
+          <div class="ft-row"><span class="ft-lbl">Pending Collection</span><span class="ft-val" style="color:var(--gold-l);" id="ft-pending-n">0</span></div>
+          <div class="ft-divider"></div>
+          <div class="ft-row">
+            <span class="ft-total-lbl">Estimated Total Earned</span>
+            <span class="ft-total-val" id="ft-total">₦0</span>
+          </div>
+          <button class="btn-collect" onclick="collectFees()">
+            <span class="material-symbols-rounded ms" style="font-size:1rem;">payments</span>
+            Send Collection Request via WhatsApp
+          </button>
+        </div>
+        <!-- SATISFACTION REVIEWS -->
+        <div class="sub-hdr">
+          <span class="material-symbols-rounded ms" style="font-size:.75rem;">star</span>
+          Satisfaction Reviews
+        </div>
+        <div id="reviews-list" style="padding:0 16px 16px;"></div>
+      </div>
+
+      <!-- ALL LISTINGS PANEL -->
+      <div id="adm-panel-all" class="adm-panel">
+        <div class="adm-listing-search-wrap">
+          <span class="material-symbols-rounded ms" style="font-size:1rem;color:var(--teal-l);">search</span>
+          <input type="text" id="adm-listing-search" class="adm-listing-search"
+            placeholder="Search by listing # e.g. 1043 or title..."
+            oninput="filterAdminListings()"
+            onkeydown="if(event.key==='Enter')lookupListingBySerial()">
+        </div>
+        <div id="adm-all-list" style="padding:0 16px 14px;"></div>
+      </div>
+
+    </div><!-- end app-body -->
+  </div><!-- end app -->
+</div>
+
+<div id="promoted-agent-dock" class="promoted-agent-dock">
+  <button type="button" class="promoted-dock-btn primary" onclick="goPage('admin.html')">
+    <span class="material-symbols-rounded">admin_panel_settings</span>
+    Admin Panel
+  </button>
+  <button type="button" class="promoted-dock-btn violet" onclick="goPage('agent.html')">
+    <span class="material-symbols-rounded">home_work</span>
+    Agent Portal
+  </button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">check_circle</span>
+  <span id="toast-msg">Done</span>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

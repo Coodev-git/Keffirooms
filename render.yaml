@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: keffirooms
+    runtime: node
+    plan: free
+    buildCommand: cd server && npm install && npm run db:migrate
+    startCommand: cd server && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      # Set these in the Render dashboard (never commit secrets):
+      # APP_URL, CLIENT_URL, DATABASE_URL, JWT_*,
+      # GOOGLE_*, CLOUDINARY_*, SMTP_*, ADMIN_*
+
+databases:
+  - name: keffirooms-db
+    plan: free
+    databaseName: keffirooms
+    user: keffirooms

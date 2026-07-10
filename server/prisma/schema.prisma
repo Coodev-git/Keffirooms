@@ -1,0 +1,213 @@
+// KeffiRooms — Prisma schema (maps to existing PostgreSQL tables)
+// Migrations: npm run db:migrate (runs schema.sql safely with IF NOT EXISTS)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  seeker
+  agent
+  admin
+
+  @@map("user_role")
+}
+
+enum AgentStatus {
+  pending
+  approved
+  denied
+
+  @@map("agent_status")
+}
+
+enum ListingStatus {
+  pending
+  verified
+  rejected
+  unavailable
+
+  @@map("listing_status")
+}
+
+enum InquiryStatus {
+  open
+  coordinating
+  completed
+  cancelled
+
+  @@map("inquiry_status")
+}
+
+enum PaymentStatus {
+  pending
+  authorized
+  captured
+  refunded
+  failed
+
+  @@map("payment_status")
+}
+
+enum VerificationAction {
+  submitted
+  approved
+  rejected
+  flagged
+  unavailable
+
+  @@map("verification_action")
+}
+
+model User {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String?   @unique @db.VarChar(255)
+  phone         String?   @unique @db.VarChar(20)
+  recoveryPhone String?   @unique @map("recovery_phone") @db.VarChar(20)
+  passwordHash  String?   @map("password_hash") @db.VarChar(255)
+  role          UserRole  @default(seeker)
+  name          String    @db.VarChar(120)
+  googleId      String?   @unique @map("google_id") @db.VarChar(255)
+  avatarUrl     String?   @map("avatar_url")
+  emailVerified Boolean   @default(false) @map("email_verified")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  agentProfile   AgentProfile?
+  listings       Listing[]       @relation("AgentListings")
+  favorites      Favorite[]
+  inquiries      Inquiry[]
+  refreshTokens  RefreshToken[]
+  otpCodes       OtpCode[]
+
+  @@map("users")
+}
+
+model AgentProfile {
+  userId            String       @id @map("user_id") @db.Uuid
+  status            AgentStatus  @default(pending)
+  businessName      String?      @map("business_name") @db.VarChar(120)
+  verificationNotes String?      @map("verification_notes")
+  isPromotedAdmin   Boolean      @default(false) @map("is_promoted_admin")
+  approvedAt        DateTime?    @map("approved_at") @db.Timestamptz(6)
+  approvedBy        String?      @map("approved_by") @db.Uuid
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("agent_profiles")
+}
+
+model Listing {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serialNumber Int           @unique @map("serial_number")
+  agentId      String        @map("agent_id") @db.Uuid
+  title        String        @db.VarChar(200)
+  type         String        @db.VarChar(80)
+  price        Int
+  description  String?
+  area         String        @db.VarChar(100)
+  landmark     String?       @db.VarChar(200)
+  distance     String        @db.VarChar(80)
+  amenities    Json          @default("[]")
+  status       ListingStatus @default(pending)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  agent     User           @relation("AgentListings", fields: [agentId], references: [id])
+  photos    ListingPhoto[]
+  favorites Favorite[]
+
+  @@index([status], map: "idx_listings_status")
+  @@index([agentId], map: "idx_listings_agent")
+  @@index([area], map: "idx_listings_area")
+  @@index([price], map: "idx_listings_price")
+  @@map("listings")
+}
+
+model ListingPhoto {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listingId  String    @map("listing_id") @db.Uuid
+  url        String
+  sortOrder  Int       @default(0) @map("sort_order") @db.SmallInt
+  gpsLat     Decimal?  @map("gps_lat") @db.Decimal(10, 6)
+  gpsLng     Decimal?  @map("gps_lng") @db.Decimal(10, 6)
+  gpsAcc     String?   @map("gps_acc") @db.VarChar(20)
+  device     String?   @db.VarChar(40)
+  capturedAt DateTime? @map("captured_at") @db.Timestamptz(6)
+  metadata   Json      @default("{}")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId], map: "idx_listing_photos_listing")
+  @@map("listing_photos")
+}
+
+model Favorite {
+  userId    String   @map("user_id") @db.Uuid
+  listingId String   @map("listing_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@id([userId, listingId])
+  @@map("favorites")
+}
+
+model Inquiry {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listingId   String        @map("listing_id") @db.Uuid
+  seekerId    String?       @map("seeker_id") @db.Uuid
+  status      InquiryStatus @default(open)
+  message     String?
+  guestPhone  String?       @map("guest_phone") @db.VarChar(20)
+  guestName   String?       @map("guest_name") @db.VarChar(120)
+  contactedAt DateTime?     @map("contacted_at") @db.Timestamptz(6)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  seeker User? @relation(fields: [seekerId], references: [id])
+
+  @@index([listingId], map: "idx_inquiries_listing")
+  @@index([seekerId], map: "idx_inquiries_seeker")
+  @@map("inquiries")
+}
+
+model RefreshToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_refresh_tokens_user")
+  @@map("refresh_tokens")
+}
+
+model OtpCode {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash") @db.VarChar(255)
+  purpose   String    @default("admin_login") @db.VarChar(40)
+  attempts  Int       @default(0) @db.SmallInt
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt(sort: Desc)], map: "idx_otp_codes_user")
+  @@map("otp_codes")
+}

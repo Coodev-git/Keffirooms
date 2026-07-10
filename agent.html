@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>KeffiRooms — Agent Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/agent.css">
+<style>
+[data-theme="dark"]{--bg:#0A0A0A;--bg2:#111;--bg3:#161616;--bg4:#1C1C1C;--card:#141414;--t1:#fff;--t2:rgba(255,255,255,.75);--t3:rgba(255,255,255,.45);--t4:rgba(255,255,255,.25);--t5:rgba(255,255,255,.1);--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);--sh:0 4px 24px rgba(0,0,0,.45);--sh-lg:0 12px 48px rgba(0,0,0,.55);}
+[data-theme="light"]{--bg:#F4F7F6;--bg2:#fff;--bg3:#EEF2F0;--bg4:#E4EAE8;--card:#fff;--t1:#0A1816;--t2:#1A3330;--t3:#2D4A45;--t4:#4A6B65;--t5:rgba(13,31,28,.1);--border:rgba(13,31,28,.12);--border2:rgba(13,31,28,.2);--sh:0 4px 24px rgba(13,31,28,.1);--sh-lg:0 12px 48px rgba(13,31,28,.14);--teal-l:#0B7A70;--gold-l:#9A5E20;}
+
+/* INQUIRY TRACKER */
+.inquiry-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-xl);padding:14px;margin-bottom:10px;animation:slideUp 280ms var(--ease) both;transition:border-color 180ms;}
+.inquiry-card:hover{border-color:var(--border2);}
+.inq-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.inq-prop{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;color:var(--t1);}
+.inq-time{font-size:.68rem;color:var(--t4);}
+.inq-seeker{font-size:.76rem;color:var(--t3);margin-bottom:10px;display:flex;align-items:center;gap:5px;}
+.inq-seeker .ms{font-size:.85rem;color:var(--teal-l);}
+.inq-actions{display:flex;gap:8px;}
+.btn-inq-contact{flex:1;background:var(--teal);color:white;padding:9px;border-radius:var(--r-lg);font-family:'Syne',sans-serif;font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 180ms;}
+.btn-inq-contact:hover{background:var(--teal-l);}
+.btn-inq-contact .ms{font-size:.88rem;}
+
+/* STATUS BADGE */
+.vetted-badge{display:inline-flex;align-items:center;gap:4px;background:var(--em-p);border:1px solid var(--em-b);color:var(--em);font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.04em;}
+.vetted-badge .ms{font-size:.75rem;}
+.exam-badge{display:inline-flex;align-items:center;gap:4px;background:var(--gold-p);border:1px solid var(--gold-b);color:var(--gold-l);font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.04em;}
+
+/* ANTI-FRAUD BANNER */
+.anti-fraud-banner{background:linear-gradient(135deg,rgba(13,148,136,.12),rgba(13,148,136,.06));border:1px solid var(--teal-b);border-radius:var(--r-xl);padding:14px;margin:0 16px 14px;animation:slideUp 300ms var(--ease) both;}
+.afb-title{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;color:var(--teal-l);margin-bottom:5px;display:flex;align-items:center;gap:6px;}
+.afb-title .ms{font-size:.9rem;}
+.afb-text{font-size:.74rem;color:var(--t3);line-height:1.6;}
+</style>
+</head>
+<body>
+
+<div id="sag">
+  <div class="app">
+
+    <!-- TOPBAR -->
+    <nav class="appbar">
+      <div class="appbar-brand">
+        <div class="appbar-logo"><span class="material-symbols-rounded ms" style="font-size:1rem;color:white;">home</span></div>
+        <div class="appbar-name">KEFFI<span class="r">ROOMS</span></div>
+      </div>
+      <div class="appbar-right">
+        <div id="dual-role-switcher" class="dual-role-switcher">
+          <button type="button" class="role-switch-btn on" data-portal="agent">
+            <span class="material-symbols-rounded">home_work</span> Agent
+          </button>
+          <button type="button" class="role-switch-btn admin" data-portal="admin">
+            <span class="material-symbols-rounded">admin_panel_settings</span> Admin
+          </button>
+        </div>
+        <div class="mode-chip"><div class="dot g"></div><span id="portal-mode-lbl">Agent Mode</span></div>
+        <button class="signout-btn" onclick="toggleTheme()">
+          <span class="material-symbols-rounded ms" style="font-size:.9rem;" id="theme-icon">dark_mode</span>
+        </button>
+        <button class="signout-btn" onclick="signOut()">
+          <span class="material-symbols-rounded ms" style="font-size:.9rem;">logout</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- BODY -->
+    <div class="app-body" id="ag-app-body">
+
+      <!-- AGENT HUB HOME -->
+      <div id="ag-home-panel">
+        <div class="agent-hub-hero">
+          <div class="breadcrumb">
+            <button class="bc-btn" onclick="goPage('index.html')">
+              <span class="material-symbols-rounded ms" style="font-size:.85rem;">arrow_back</span> Return Home
+            </button>
+          </div>
+          <div class="ah-title-row">
+            <div class="ah-title">Agent<br>Business<br>Hub</div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+              <div id="dual-role-badge" class="dual-role-badge"></div>
+              <div id="agent-status-badge" class="vetted-badge">
+                <span class="material-symbols-rounded ms" style="font-size:.75rem;">verified</span>
+                AUTHORIZED
+              </div>
+            </div>
+          </div>
+          <div class="ah-sub" id="ah-agent-name">Manage listings and view leads for your rooms near NSUK.</div>
+          <button class="ah-cta" onclick="showPostForm()">
+            <span class="material-symbols-rounded ms" style="font-size:1rem;">add</span>
+            List New Room
+          </button>
+        </div>
+
+        <!-- ANTI-FRAUD BANNER -->
+        <div class="anti-fraud-banner">
+          <div class="afb-title">
+            <span class="material-symbols-rounded ms">security</span>
+            Contact via Coordinator Protection
+          </div>
+          <div class="afb-text">All student inquiries are routed through the KeffiRooms coordinator. Never request direct payment before coordinator verification. A <strong>₦5,000 coordination fee</strong> applies to agents only after a confirmed successful connection (seekers pay ₦2,000). Violations result in permanent account ban.</div>
+        </div>
+
+        <!-- STATS GRID -->
+        <div class="ah-stats-grid">
+          <div class="ah-stat">
+            <div class="ah-stat-lbl">Active Submissions</div>
+            <div class="ah-stat-n white" id="ag-total">0</div>
+            <div class="ah-stat-sub"><span id="ag-stat-sub">0 verified, 0 pending</span></div>
+          </div>
+          <div class="ah-stat">
+            <div class="ah-stat-lbl">Inquiry Views</div>
+            <div class="ah-stat-n gold">—</div>
+            <div class="ah-stat-sub"><span class="up">Live when deployed</span></div>
+          </div>
+          <div class="ah-stat">
+            <div class="ah-stat-lbl">Direct Leads</div>
+            <div class="ah-stat-n teal" id="ag-leads">0</div>
+            <div class="ah-stat-sub">Contact requests</div>
+          </div>
+          <div class="ah-stat">
+            <div class="ah-stat-lbl">Trust Score</div>
+            <div class="ah-stat-n teal" id="ag-trust-score">—</div>
+            <div class="ah-stat-sub" id="ag-trust-sub">Based on your listings &amp; reviews</div>
+          </div>
+        </div>
+
+        <!-- INQUIRY TRACKER -->
+        <div style="padding:0 16px 8px;">
+          <div class="sub-hdr">
+            <span class="material-symbols-rounded ms" style="font-size:.75rem;">notifications_active</span>
+            Student Inquiry Tracker
+          </div>
+          <div id="ag-inquiries">
+            <div style="font-size:.78rem;color:var(--t4);padding:8px 0;">No inquiries yet. Inquiries appear here when seekers contact you through the platform.</div>
+          </div>
+        </div>
+
+        <!-- PROPERTIES TABLE -->
+        <div class="props-section">
+          <div class="props-hdr">Your Listed Properties</div>
+          <div class="prop-table-hdr">
+            <span>Lodge Details</span><span>Location</span><span>Price/yr</span><span>Actions</span>
+          </div>
+          <div id="ag-props-list"></div>
+        </div>
+      </div>
+
+      <!-- POST FORM PANEL -->
+      <div id="ag-post-panel" style="display:none;">
+        <div class="post-form-wrap">
+          <button class="bc-btn" style="margin-bottom:16px;" onclick="hidePostForm()">
+            <span class="material-symbols-rounded ms" style="font-size:.85rem;">arrow_back</span> Back to Hub
+          </button>
+          <div class="post-form-header">
+            <div class="post-form-title" id="post-form-title">List New Room</div>
+            <div class="post-form-sub" id="post-form-sub">Fill all required fields. Listing reviewed before publishing.</div>
+          </div>
+          <div class="listing-policy-note" id="listing-policy-note">
+            <span class="material-symbols-rounded">shield</span>
+            Do not put phone numbers, WhatsApp, email, or social handles in the title or description. KeffiRooms routes all student contact.
+          </div>
+
+          <!-- LISTING CONSTRUCTOR -->
+          <div class="form-section">
+            <div class="fs-title">
+              <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">info</span>
+              Apartment Details
+            </div>
+            <div class="fg"><label>Title <span class="rq">*</span></label>
+              <input class="fi" id="f-title" placeholder="e.g. Spacious Self Contain in Angwan Lambu"></div>
+            <div class="fr">
+              <div class="fg"><label>Room Type <span class="rq">*</span></label>
+                <select class="fs" id="f-type">
+                  <option value="">Select</option>
+                  <option>Self Contain</option><option>Single Room</option>
+                  <option>Mini Flat</option><option>One Bedroom Flat</option>
+                  <option>Two Bedroom Flat</option><option>Shared Room</option>
+                  <option>Boys Quarters (BQ)</option>
+                </select>
+              </div>
+              <div class="fg"><label>Annual Rent (₦) <span class="rq">*</span></label>
+                <input class="fi" type="number" id="f-price" placeholder="150000"></div>
+            </div>
+            <div class="fg"><label>Description <span class="rq">*</span></label>
+              <textarea class="fta" id="f-desc" placeholder="Describe the room, water, security, meter, bathroom... No phone numbers or contact details."></textarea>
+            </div>
+            <div class="fr">
+              <div class="fg"><label>Bedrooms</label>
+                <select class="fs" id="f-beds">
+                  <option>1</option><option>2</option><option>3</option><option>Shared</option>
+                </select>
+              </div>
+              <div class="fg"><label>Bathrooms</label>
+                <select class="fs" id="f-baths">
+                  <option>1</option><option>2</option><option>Shared</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><label>Distance from Campus <span class="rq">*</span></label>
+              <select class="fs" id="f-distance">
+                <option value="">Select</option>
+                <option>5 mins walk to main gate</option>
+                <option>8 mins walk to Campus Gate 2</option>
+                <option>10 mins transport to Campus</option>
+                <option>12 mins walk to Admin block</option>
+                <option>N200 bike ride</option><option>N300 bike ride</option>
+                <option>N400 bike ride</option><option>Trekable</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- AMENITIES (from README spec) -->
+          <div class="form-section">
+            <div class="fs-title">
+              <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">checklist</span>
+              Amenities Coordinator
+            </div>
+            <div class="amenity-check-grid" id="amenity-checks">
+              <label class="amenity-check-label"><input type="checkbox" value="Water"> Water Supply</label>
+              <label class="amenity-check-label"><input type="checkbox" value="Prepaid Meter"> Prepaid Meter</label>
+              <label class="amenity-check-label"><input type="checkbox" value="AC"> Air Condition</label>
+              <label class="amenity-check-label"><input type="checkbox" value="Fenced Compound"> Fenced Compound</label>
+              <label class="amenity-check-label"><input type="checkbox" value="Security Guard"> Security Guard</label>
+              <label class="amenity-check-label"><input type="checkbox" value="Borehole"> Borehole</label>
+              <label class="amenity-check-label"><input type="checkbox" value="Balcony"> Balcony</label>
+              <label class="amenity-check-label"><input type="checkbox" value="Generator Space"> Generator Space</label>
+              <label class="amenity-check-label"><input type="checkbox" value="Tiled Floor"> Tiled Floor</label>
+              <label class="amenity-check-label"><input type="checkbox" value="CCTV"> CCTV</label>
+            </div>
+          </div>
+
+          <!-- LOCATION -->
+          <div class="form-section">
+            <div class="fs-title">
+              <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">location_on</span>
+              Location
+            </div>
+            <div class="fg"><label>Keffi Area <span class="rq">*</span></label>
+              <select class="fs" id="f-area">
+                <option value="">Select</option>
+                <option>Angwan Lambu</option><option>High Court</option>
+                <option>Pyanku Road</option><option>Kelv Area</option>
+                <option>Road Safety</option><option>BCG Area</option>
+                <option>Mararaba</option><option>Campus Gate</option>
+                <option>Angwan Ka'are</option><option>Other</option>
+              </select>
+            </div>
+            <div class="fg"><label>Street / Landmark</label>
+              <input class="fi" id="f-landmark" placeholder="e.g. Behind First Bank, near the mosque"></div>
+          </div>
+
+          <!-- PHOTOS + GPS (min 5, as specified) -->
+          <div class="form-section" id="photo-section">
+            <div class="fs-title">
+              <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">photo_library</span>
+              Photos &amp; Trust Capture
+              <span style="font-size:.72rem;font-weight:400;color:var(--t3);" id="photo-section-hint">(min 5 required)</span>
+            </div>
+            <div class="photo-drop" onclick="document.getElementById('pfi').click()">
+              <span class="material-symbols-rounded ms" style="font-size:1.8rem;display:block;margin:0 auto 10px;color:var(--teal-l);">add_a_photo</span>
+              <p><strong>Tap to take or upload photos</strong><br>
+              Minimum 5 · Maximum 12 · GPS metadata auto-attached.<br>
+              <span style="color:var(--teal-l);font-size:.72rem;">Images are hosted and sent in WhatsApp inquiries</span></p>
+            </div>
+            <input type="file" id="pfi" accept="image/*" multiple capture="environment" onchange="handlePhotos(event)">
+            <div class="photo-count-lbl" id="photo-count-lbl">0 / 12 photos added (min. 5)</div>
+            <div class="photo-row" id="photo-row"></div>
+            <div style="margin-top:14px;">
+              <div class="trust-capture-box">
+                <div class="tcb-title">Location Pin <span class="opt-tag">Recommended</span></div>
+                <div class="tcb-sub">Pin the property on-site for faster admin approval. You can still submit without it, but listings without GPS are reviewed more strictly.</div>
+                <button type="button" class="btn-capture" onclick="doCapture()">
+                  <span class="material-symbols-rounded ms" style="font-size:.95rem;">my_location</span>
+                  Capture Location Pin
+                </button>
+                <div class="meta-display" id="metabox" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn-dispatch" id="btn-dispatch" onclick="submitListing()">
+            <span class="material-symbols-rounded ms" style="font-size:1.1rem;">send</span>
+            <span id="btn-dispatch-label">Dispatch to Verification Queue</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div class="btm-nav" id="ag-btm-nav">
+      <button class="bn on" id="bn-ag-h" onclick="agTab('home',this)">
+        <span class="material-symbols-rounded ms" style="font-size:1.3rem;">dashboard</span>
+        <span>Hub</span>
+      </button>
+      <button class="bn" id="bn-ag-p" onclick="agTab('post',this)">
+        <span class="material-symbols-rounded ms" style="font-size:1.3rem;">add_circle</span>
+        <span>Post</span>
+      </button>
+      <button class="bn" id="bn-ag-b" onclick="agTab('browse',this)">
+        <span class="material-symbols-rounded ms" style="font-size:1.3rem;">search</span>
+        <span>Browse</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">check_circle</span>
+  <span id="toast-msg">Done</span>
+</div>
+
+<!-- GPS WARNING MODAL -->
+<div class="modal-overlay" id="gps-warn-modal" onclick="closeGpsWarnModal(event)">
+  <div class="gps-warn-sheet" onclick="event.stopPropagation()">
+    <div class="gws-icon">
+      <span class="material-symbols-rounded ms">location_off</span>
+    </div>
+    <div class="gws-title">No property location pinned</div>
+    <p class="gws-text">
+      Listings without a live GPS pin are harder for KeffiRooms to verify and are <strong>less likely to be approved</strong>.
+      Admin may delay or reject submissions that cannot be location-checked.
+    </p>
+    <button type="button" class="gws-btn primary" onclick="gpsWarnPinNow()">
+      <span class="material-symbols-rounded ms">my_location</span>
+      Pin property location now
+    </button>
+    <button type="button" class="gws-btn ghost" onclick="confirmSubmitWithoutPin()">
+      Continue without location pin
+    </button>
+    <button type="button" class="gws-cancel" onclick="closeGpsWarnModal()">Go back and edit</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/agent.js"></script>
+</body>
+</html>

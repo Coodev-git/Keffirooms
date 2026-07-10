@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: keffirooms-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: keffirooms
+      POSTGRES_PASSWORD: keffirooms
+      POSTGRES_DB: keffirooms
+    ports:
+      - '5432:5432'
+    volumes:
+      - keffirooms_pg:/var/lib/postgresql/data
+
+volumes:
+  keffirooms_pg:

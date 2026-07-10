@@ -1,0 +1,14 @@
+{
+  "name": "keffirooms",
+  "private": true,
+  "scripts": {
+    "install:server": "npm install --prefix server",
+    "db:up": "docker compose up -d postgres",
+    "db:migrate": "npm run db:migrate --prefix server",
+    "db:seed": "npm run db:seed --prefix server",
+    "dev": "npm run dev --prefix server",
+    "start": "npm run start --prefix server",
+    "prod:check": "npm run prod:check --prefix server",
+    "setup": "npm run install:server && npm run db:up && sleep 3 && npm run db:migrate && npm run db:seed"
+  }
+}

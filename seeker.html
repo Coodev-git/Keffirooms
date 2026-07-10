@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>KeffiRooms — Find Your Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/seeker.css">
+<style>
+[data-theme="dark"]{--bg:#0A0A0A;--bg2:#111;--bg3:#161616;--bg4:#1C1C1C;--card:#141414;--t1:#fff;--t2:rgba(255,255,255,.75);--t3:rgba(255,255,255,.45);--t4:rgba(255,255,255,.25);--t5:rgba(255,255,255,.1);--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);--sh:0 4px 24px rgba(0,0,0,.45);--sh-lg:0 12px 48px rgba(0,0,0,.55);}
+[data-theme="light"]{--bg:#F4F7F6;--bg2:#fff;--bg3:#EEF2F0;--bg4:#E4EAE8;--card:#fff;--t1:#0A1816;--t2:#1A3330;--t3:#2D4A45;--t4:#4A6B65;--t5:rgba(13,31,28,.1);--border:rgba(13,31,28,.12);--border2:rgba(13,31,28,.2);--sh:0 4px 24px rgba(13,31,28,.1);--sh-lg:0 12px 48px rgba(13,31,28,.14);--teal-l:#0B7A70;--gold-l:#9A5E20;}
+.sk-sub-hdr{padding:20px 16px 8px;}
+.sk-sub-title{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:var(--t1);margin-bottom:4px;}
+.sk-sub-desc{font-size:.78rem;color:var(--t3);line-height:1.5;}
+.profile-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px;margin-bottom:14px;}
+.profile-top{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+.profile-av{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal-d));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#fff;flex-shrink:0;}
+.profile-name{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:var(--t1);}
+.profile-role{font-size:.72rem;color:var(--teal-l);font-weight:600;margin-top:2px;}
+.profile-meta{font-size:.78rem;color:var(--t3);margin-top:4px;line-height:1.6;}
+.profile-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);font-size:.8rem;color:var(--t2);}
+.profile-row:last-child{border-bottom:none;}
+.profile-row .ms{font-size:1rem;color:var(--teal-l);}
+.btn-profile{width:100%;padding:13px;border-radius:var(--r-lg);font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;transition:all 180ms;}
+.btn-profile.teal{background:var(--teal);color:#fff;}
+.btn-profile.outline{background:transparent;border:1px solid var(--border);color:var(--t2);}
+.btn-profile.danger{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#f87171;}
+</style>
+</head>
+<body>
+
+<!-- SEEKER APP -->
+<div id="scr-seeker">
+  <div class="app">
+
+    <!-- TOPBAR -->
+    <nav class="appbar">
+      <div class="appbar-brand">
+        <div class="appbar-logo"><span class="material-symbols-rounded ms" style="font-size:1rem;color:white;">home</span></div>
+        <div class="appbar-name">KEFFI<span class="r">ROOMS</span></div>
+      </div>
+      <div class="appbar-right">
+        <div class="mode-chip">
+          <div class="dot t"></div>
+          <span id="mode-chip-label">Seeker Mode</span>
+        </div>
+        <button class="signout-btn" onclick="signOut()" title="Sign out">
+          <span class="material-symbols-rounded ms" style="font-size:.9rem;">logout</span>
+        </button>
+        <button class="signout-btn" onclick="toggleTheme()" title="Toggle theme">
+          <span class="material-symbols-rounded ms" style="font-size:.9rem;" id="theme-icon-app">dark_mode</span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="app-body">
+      <!-- LISTINGS (home tab) -->
+      <div id="sk-panel-home">
+      <div class="seeker-hero">
+        <!-- BREADCRUMB -->
+        <div class="breadcrumb">
+          <button class="bc-btn" onclick="goPage('index.html')">
+            <span class="material-symbols-rounded ms" style="font-size:.85rem;">arrow_back</span> Back to Home
+          </button>
+          <span class="bc-sep">/</span>
+          <span class="bc-cur">Seeker Portal</span>
+        </div>
+        <div class="sk-h">Available<br>Student<br>Rooms</div>
+        <div class="sk-s">Discover secure apartments within walking distance from Nasarawa State University Campus.</div>
+
+        <!-- FILTER PANEL -->
+        <div class="filter-panel">
+          <div class="filter-hdr">
+            <div class="filter-title">
+              <span class="material-symbols-rounded ms" style="font-size:1rem;">tune</span>
+              Filters
+            </div>
+            <button class="filter-reset" onclick="resetFilters()">Reset All</button>
+          </div>
+          <div class="filter-sep"></div>
+          <div class="filter-sec-lbl">Select Keffi Area</div>
+          <div class="area-list" id="area-list">
+            <button class="area-row on"  onclick="setArea('all',this)">All Areas</button>
+            <button class="area-row off" onclick="setArea('Angwan Lambu',this)">Angwan Lambu</button>
+            <button class="area-row off" onclick="setArea('High Court',this)">High Court</button>
+            <button class="area-row off" onclick="setArea('Pyanku',this)">Pyanku</button>
+            <button class="area-row off" onclick="setArea('Kelv',this)">Kelv</button>
+            <button class="area-row off" onclick="setArea('Road Safety',this)">Road Safety</button>
+            <button class="area-row off" onclick="setArea('BCG Area',this)">BCG Area</button>
+            <button class="area-row off" onclick="setArea('Mararaba',this)">Mararaba</button>
+          </div>
+          <div class="filter-sep"></div>
+          <div class="price-row">
+            <div class="filter-sec-lbl" style="margin-bottom:0;">Max Price Limit</div>
+            <div class="price-val" id="price-val">N500,000</div>
+          </div>
+          <input type="range" class="price-slider" id="price-slider"
+                 min="80000" max="500000" value="500000"
+                 oninput="updatePrice(this)">
+          <div class="price-marks"><span>N80K</span><span>N240K</span><span>N400K</span></div>
+          <div class="filter-sep"></div>
+          <div class="v-toggle-row">
+            <div class="v-toggle-lbl">Verified Only</div>
+            <button class="tgl" id="v-toggle" onclick="toggleVerified()" title="Filter to verified listings only"></button>
+          </div>
+        </div>
+
+        <!-- AMENITY SEARCH -->
+        <div class="amenity-search-wrap">
+          <span class="material-symbols-rounded ms" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:1rem;color:var(--t4);">search</span>
+          <input type="text" id="amenity-q" placeholder="Search #1043, area, or amenities (water, prepaid...)" oninput="renderListings()">
+        </div>
+      </div>
+
+      <!-- LISTINGS -->
+      <div style="padding:0 16px 16px;">
+        <div class="list-count-row" id="list-count">Showing <strong>0</strong> Rooms</div>
+        <div id="listings-cont"></div>
+      </div>
+      </div><!-- /sk-panel-home -->
+
+      <!-- SAVED TAB -->
+      <div id="sk-panel-saved" class="sk-subpanel" style="display:none;">
+        <div class="sk-sub-hdr">
+          <div class="sk-sub-title">Saved Listings</div>
+          <div class="sk-sub-desc">Rooms you've marked with the heart icon.</div>
+        </div>
+        <div style="padding:0 16px 16px;" id="saved-cont"></div>
+      </div>
+
+      <!-- PROFILE TAB -->
+      <div id="sk-panel-profile" class="sk-subpanel" style="display:none;">
+        <div id="profile-cont" style="padding:16px;"></div>
+      </div>
+
+    </div><!-- /app-body -->
+
+    <!-- BOTTOM NAV -->
+    <div class="btm-nav">
+      <button class="bn on" id="bn-home" onclick="skTab('home',this)">
+        <span class="material-symbols-rounded ms" style="font-size:1.3rem;">home</span>
+        <span>Home</span>
+      </button>
+      <button class="bn" id="bn-saved" onclick="skTab('saved',this)">
+        <span class="material-symbols-rounded ms" style="font-size:1.3rem;">favorite</span>
+        <span>Saved</span>
+      </button>
+      <button class="bn" id="bn-profile" onclick="skTab('profile',this)">
+        <span class="material-symbols-rounded ms" style="font-size:1.3rem;">person</span>
+        <span>Profile</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detail-overlay" onclick="closeDetailModal(event)">
+  <div class="detail-sheet" id="detail-sheet">
+    <div class="ds-img" id="ds-img">
+      <div class="ds-img-ph">
+        <span class="material-symbols-rounded ms" style="font-size:3rem;">image_not_supported</span>
+      </div>
+      <button class="ds-close" onclick="closeDetailModal({currentTarget:this})">
+        <span class="material-symbols-rounded ms" style="font-size:1rem;">close</span>
+      </button>
+    </div>
+    <div class="ds-body">
+      <div class="ds-title" id="ds-title">—</div>
+      <div id="ds-status"></div>
+      <div class="ds-loc"  id="ds-loc">
+        <span class="material-symbols-rounded ms" style="font-size:.9rem;">location_on</span>—
+      </div>
+      <div id="ds-stale"></div>
+      <div id="ds-trust"></div>
+      <div class="ds-section-lbl">ABOUT THIS LODGE</div>
+      <div class="ds-desc" id="ds-desc">—</div>
+      <div class="ds-divider"></div>
+      <div class="ds-section-lbl">LODGE AMENITIES AVAILABLE</div>
+      <div class="amenity-grid" id="ds-amenities"></div>
+      <div class="ds-divider"></div>
+      <div class="ds-section-lbl">LOCATION</div>
+      <div class="map-row" onclick="openMap()">
+        <div class="map-ic"><span class="material-symbols-rounded ms" style="font-size:1.1rem;color:var(--teal-l);">map</span></div>
+        <div class="map-txt">
+          <div class="map-txt-t" id="ds-map-lbl">Open in Google Maps</div>
+          <div class="map-txt-s">Tap to view exact location</div>
+        </div>
+        <div class="map-arr"><span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--t4);">open_in_new</span></div>
+      </div>
+      <div id="ds-contact"></div>
+      <button class="report-btn" onclick="reportListing()">
+        <span class="material-symbols-rounded ms" style="font-size:.85rem;">flag</span>
+        Report this listing
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT SCREEN -->
+<div id="scr-chat" style="display:none;flex-direction:column;min-height:100vh;background:var(--bg);">
+  <div class="chat-header">
+    <button class="chat-back" onclick="closeChatScreen()">
+      <span class="material-symbols-rounded ms" style="font-size:1.1rem;">arrow_back</span>
+    </button>
+    <div class="chat-av" id="chat-av">KR</div>
+    <div class="chat-agent-info">
+      <div class="chat-agent-name" id="chat-agent-name">KeffiRooms Support</div>
+      <div class="chat-status">Online Agent</div>
+    </div>
+    <div class="chat-actions">
+      <button class="chat-icon-btn" onclick="callAgent()">
+        <span class="material-symbols-rounded ms" style="font-size:1rem;">call</span>
+      </button>
+      <button class="chat-icon-btn" onclick="closeChatScreen()">
+        <span class="material-symbols-rounded ms" style="font-size:1rem;">close</span>
+      </button>
+    </div>
+  </div>
+  <div class="chat-body" id="chat-body"></div>
+  <div class="chat-input-row">
+    <input type="text" id="chat-input"
+           placeholder="Ask about inspection or price negotiation..."
+           onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()">
+      <span class="material-symbols-rounded ms" style="font-size:1.1rem;">send</span>
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">check_circle</span>
+  <span id="toast-msg">Done</span>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/seeker.js"></script>
+</body>
+</html>

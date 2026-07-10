@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+        <title>KeffiRooms — NSUK Student Lodges</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+        <link rel="stylesheet" href="css/base.css">
+        <link rel="stylesheet" href="css/landing.css">
+        <style>
+            /* ── THEME TOKENS ── */
+            [data-theme="dark"] {
+                --bg: #0A0A0A;
+                --bg2: #111;
+                --bg3: #161616;
+                --bg4: #1C1C1C;
+                --card: #141414;
+                --t1: #fff;
+                --t2: rgba(255, 255, 255, .75);
+                --t3: rgba(255, 255, 255, .45);
+                --t4: rgba(255, 255, 255, .25);
+                --t5: rgba(255, 255, 255, .1);
+                --border: rgba(255, 255, 255, .08);
+                --border2: rgba(255, 255, 255, .14);
+                --sh: 0 4px 24px rgba(0, 0, 0, .45);
+                --sh-lg: 0 12px 48px rgba(0, 0, 0, .55);
+            }
+            [data-theme="light"] {
+                --bg: #F4F7F6;
+                --bg2: #fff;
+                --bg3: #EEF2F0;
+                --bg4: #E4EAE8;
+                --card: #fff;
+                --t1: #0A1816;
+                --t2: #1A3330;
+                --t3: #2D4A45;
+                --t4: #4A6B65;
+                --t5: rgba(13, 31, 28, .1);
+                --border: rgba(13, 31, 28, .12);
+                --border2: rgba(13, 31, 28, .2);
+                --sh: 0 4px 24px rgba(13, 31, 28, .1);
+                --sh-lg: 0 12px 48px rgba(13, 31, 28, .14);
+                --teal-l: #0B7A70;
+                --gold-l: #9A5E20;
+            }
+
+            /* SOCIAL PROOF ROW */
+            .social-proof {
+                display: flex;
+                align-items: center;
+                gap: 0;
+                margin-bottom: 6px;
+                animation: slideUp 400ms var(--ease) 350ms both;
+            }
+            .sp-avatars {
+                display: flex;
+                margin-right: 10px;
+            }
+            .sp-av {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                border: 2px solid var(--bg);
+                background: linear-gradient(135deg,var(--teal),var(--teal-d));
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Syne', sans-serif;
+                font-size: 0.62rem;
+                font-weight: 700;
+                color: white;
+                margin-left: -8px;
+            }
+            .sp-av:first-child {
+                margin-left: 0;
+            }
+            .sp-text {
+                font-size: 0.72rem;
+                color: var(--t3);
+            }
+            .sp-text strong {
+                color: var(--t1);
+                font-weight: 600;
+            }
+            .sp-stars {
+                color: #F59E0B;
+                font-size: 0.75rem;
+                letter-spacing: 1px;
+            }
+
+            /* TRUST BADGES ROW */
+            .trust-badges {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-bottom: 28px;
+                animation: slideUp 400ms var(--ease) 300ms both;
+            }
+            .trust-badge {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                background: var(--bg2);
+                border: 1px solid var(--border);
+                border-radius: 20px;
+                padding: 5px 11px;
+                font-size: 0.7rem;
+                color: var(--t3);
+            }
+            .trust-badge .ms {
+                font-size: 0.82rem;
+                color: var(--teal-l);
+            }
+
+            /* FEATURED LISTING CARD */
+            .feat-wrap {
+                width: 100%;
+                max-width: 380px;
+                margin: 0 auto 28px;
+                animation: slideUp 400ms var(--ease) 280ms both;
+            }
+            .feat-card {
+                background: var(--bg2);
+                border: 1px solid var(--border);
+                border-radius: var(--r-xl);
+                overflow: hidden;
+                cursor: pointer;
+                transition: transform 200ms var(--ease), box-shadow 200ms;
+            }
+            .feat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 28px rgba(0, 0, 0, .4);
+            }
+            .feat-inner {
+                padding: 14px;
+                display: flex;
+                gap: 12px;
+                align-items: center;
+            }
+            .feat-thumb {
+                width: 64px;
+                height: 64px;
+                border-radius: var(--r);
+                overflow: hidden;
+                flex-shrink: 0;
+                background: var(--bg4);
+            }
+            .feat-thumb img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .feat-thumb-ph {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .feat-info {
+                flex: 1;
+            }
+            .feat-area {
+                font-size: 0.68rem;
+                font-weight: 700;
+                color: var(--teal-l);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 3px;
+            }
+            .feat-v {
+                display: inline-flex;
+                align-items: center;
+                gap: 3px;
+                background: rgba(16, 185, 129, .2);
+                border: 1px solid rgba(16, 185, 129, .3);
+                color: #34D399;
+                font-size: 0.62rem;
+                font-weight: 700;
+                padding: 2px 7px;
+                border-radius: 20px;
+                float: right;
+            }
+            .feat-v .ms {
+                font-size: 0.72rem;
+            }
+            .feat-title {
+                font-family: 'Syne', sans-serif;
+                font-size: 0.88rem;
+                font-weight: 700;
+                color: var(--t1);
+                margin-bottom: 2px;
+            }
+            .feat-price {
+                font-size: 0.78rem;
+                color: var(--t3);
+            }
+
+            /* HOW IT WORKS */
+            .hiw {
+                padding: 0 20px 32px;
+                max-width: 420px;
+                margin: 0 auto;
+                animation: slideUp 400ms var(--ease) 200ms both;
+            }
+            .hiw-title {
+                font-family: 'Syne', sans-serif;
+                font-size: 1.55rem;
+                font-weight: 800;
+                color: var(--t1);
+                margin-bottom: 20px;
+            }
+            .hiw-step {
+                display: flex;
+                gap: 14px;
+                margin-bottom: 18px;
+                align-items: flex-start;
+            }
+            .step-num {
+                width: 38px;
+                height: 38px;
+                border-radius: 10px;
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Syne', sans-serif;
+                font-size: 0.9rem;
+                font-weight: 800;
+            }
+            .step-num.t {
+                background: var(--teal-p);
+                border: 1px solid var(--teal-b);
+                color: var(--teal-l);
+            }
+            .step-num.g {
+                background: var(--gold-p);
+                border: 1px solid var(--gold-b);
+                color: var(--gold-l);
+            }
+            .step-t {
+                font-family: 'Syne', sans-serif;
+                font-size: 0.9rem;
+                font-weight: 700;
+                color: var(--t1);
+                margin-bottom: 3px;
+            }
+            .step-s {
+                font-size: 0.78rem;
+                color: var(--t3);
+                line-height: 1.6;
+            }
+
+            /* STATS STRIP */
+            .stats-strip {
+                display: flex;
+                justify-content: space-around;
+                width: 100%;
+                max-width: 380px;
+                border-top: 1px solid var(--border);
+                padding-top: 24px;
+                margin-bottom: 32px;
+                animation: slideUp 400ms var(--ease) 360ms both;
+            }
+            .stat-item {
+                text-align: center;
+            }
+            .stat-n {
+                font-family: 'Syne', sans-serif;
+                font-size: 1.9rem;
+                font-weight: 800;
+                line-height: 1;
+            }
+            .stat-n.t {
+                color: var(--t1);
+            }
+            .stat-n.g {
+                color: var(--teal-l);
+            }
+            .stat-n.gld {
+                color: var(--gold-l);
+            }
+            .stat-l {
+                font-size: 0.64rem;
+                color: var(--t3);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-top: 3px;
+            }
+
+            /* THEME TOGGLE */
+            .theme-toggle {
+                position: fixed;
+                top: 16px;
+                right: 16px;
+                z-index: 200;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: var(--bg2);
+                border: 1px solid var(--border);
+                color: var(--t3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 200ms var(--ease);
+                box-shadow: var(--sh);
+            }
+            .theme-toggle:hover {
+                background: var(--bg3);
+                border-color: var(--border2);
+                color: var(--t1);
+            }
+            .theme-toggle .ms {
+                font-size: 1.1rem;
+            }
+            [data-theme="light"] .theme-toggle {
+                background: var(--bg2);
+                border-color: var(--border);
+                color: var(--t3);
+            }
+
+            .lp-scroll-hint {
+                flex-shrink: 0;
+                text-align: center;
+                padding: 0 20px 10px;
+                font-size: .68rem;
+                color: var(--t4);
+                animation: fadeIn 500ms var(--ease) 500ms both;
+            }
+
+            /* TERMS POPUP */
+            .terms-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, .75);
+                z-index: 300;
+                display: none;
+                align-items: flex-end;
+                backdrop-filter:blur(6px);
+            }
+            .terms-overlay.open {
+                display: flex;
+                animation: backdropIn 250ms ease both;
+            }
+            .terms-sheet {
+                background: var(--bg2);
+                border-radius: 24px 24px 0 0;
+                width: 100%;
+                max-width: 520px;
+                margin: 0 auto;
+                padding: 20px 20px 36px;
+                animation: sheetUp 320ms var(--ease) both;
+                max-height: 88vh;
+                overflow-y: auto;
+            }
+            .terms-handle {
+                width: 34px;
+                height: 4px;
+                background: var(--bg4);
+                border-radius: 2px;
+                margin: 0 auto 18px;
+            }
+            .terms-title {
+                font-family: 'Syne', sans-serif;
+                font-size: 1.2rem;
+                font-weight: 800;
+                color: var(--t1);
+                margin-bottom: 4px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .terms-title .ms {
+                font-size: 1.2rem;
+                color: var(--teal-l);
+            }
+            .terms-sub {
+                font-size: 0.78rem;
+                color: var(--t3);
+                margin-bottom: 18px;
+                line-height: 1.55;
+            }
+            .terms-section {
+                margin-bottom: 16px;
+            }
+            .terms-section-title {
+                font-size: 0.72rem;
+                font-weight: 700;
+                letter-spacing: 0.07em;
+                text-transform: uppercase;
+                color: var(--teal-l);
+                margin-bottom: 8px;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+            .terms-section-title .ms {
+                font-size: 0.85rem;
+            }
+            .terms-item {
+                display: flex;
+                gap: 10px;
+                align-items: flex-start;
+                margin-bottom: 8px;
+                font-size: 0.8rem;
+                color: var(--t2);
+                line-height: 1.6;
+            }
+            .terms-item .ms {
+                font-size: 0.95rem;
+                color: var(--teal-l);
+                flex-shrink: 0;
+                margin-top: 1px;
+            }
+            .terms-divider {
+                height: 1px;
+                background: var(--border);
+                margin: 14px 0;
+            }
+            .terms-highlight {
+                background: var(--teal-p);
+                border: 1px solid var(--teal-b);
+                border-radius: var(--r);
+                padding: 12px 14px;
+                font-size: 0.78rem;
+                color: var(--teal-l);
+                line-height: 1.6;
+                margin-bottom: 16px;
+                display: flex;
+                gap: 8px;
+                align-items: flex-start;
+            }
+            .terms-highlight .ms {
+                font-size: 0.95rem;
+                flex-shrink: 0;
+                margin-top: 1px;
+            }
+            .terms-fee-box {
+                background: var(--gold-p);
+                border: 1px solid var(--gold-b);
+                border-radius: var(--r);
+                padding: 12px 14px;
+                font-size: 0.78rem;
+                color: var(--gold-l);
+                line-height: 1.6;
+                margin-bottom: 16px;
+            }
+            .terms-fee-box strong {
+                display: block;
+                font-size: 0.84rem;
+                margin-bottom: 3px;
+                font-family: 'Syne', sans-serif;
+            }
+            .terms-actions {
+                display: flex;
+                gap: 10px;
+            }
+            .btn-terms-accept {
+                flex: 1;
+                background: var(--teal);
+                color: white;
+                padding: 13px;
+                border-radius: var(--r-xl);
+                font-family: 'Syne', sans-serif;
+                font-size: 0.9rem;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 7px;
+                transition: all 200ms var(--ease);
+                box-shadow: 0 4px 14px rgba(13, 148, 136, .3);
+            }
+            .btn-terms-accept:hover {
+                background: var(--teal-l);
+                transform: translateY(-1px);
+            }
+            .btn-terms-accept .ms {
+                font-size: 1rem;
+            }
+            .btn-terms-decline {
+                background: var(--bg3);
+                border: 1px solid var(--border);
+                color: var(--t3);
+                padding: 13px 16px;
+                border-radius: var(--r-xl);
+                font-size: 0.86rem;
+                transition: all 200ms;
+            }
+            .btn-terms-decline:hover {
+                border-color: var(--border2);
+                color: var(--t2);
+            }
+
+            /* SATISFACTION MODAL */
+            .sat-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, .75);
+                z-index: 300;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                backdrop-filter:blur(6px);
+            }
+            .sat-overlay.open {
+                display: flex;
+                animation: backdropIn 250ms ease both;
+            }
+            .sat-card {
+                background: var(--bg2);
+                border-radius: var(--r-2xl);
+                padding: 24px 20px;
+                width: 100%;
+                max-width: 360px;
+                text-align: center;
+                animation: bounceIn 380ms var(--spring) both;
+            }
+            .sat-icon {
+                font-size: 3rem;
+                margin-bottom: 12px;
+            }
+            .sat-title {
+                font-family: 'Syne', sans-serif;
+                font-size: 1.2rem;
+                font-weight: 800;
+                color: var(--t1);
+                margin-bottom: 6px;
+            }
+            .sat-sub {
+                font-size: 0.8rem;
+                color: var(--t3);
+                line-height: 1.6;
+                margin-bottom: 20px;
+            }
+            .sat-stars {
+                display: flex;
+                gap: 8px;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+            .sat-star {
+                font-size: 2rem;
+                cursor: pointer;
+                transition: transform 200ms var(--spring);
+                color: var(--bg4);
+            }
+            .sat-star.active {
+                color: #F59E0B;
+            }
+            .sat-star:hover {
+                transform: scale(1.2);
+            }
+            .sat-textarea {
+                width: 100%;
+                background: var(--bg3);
+                border: 1.5px solid var(--border);
+                border-radius: var(--r-lg);
+                padding: 11px 13px;
+                font-size: 0.84rem;
+                color: var(--t1);
+                outline: none;
+                resize: none;
+                height: 80px;
+                margin-bottom: 14px;
+                transition: border-color 180ms;
+            }
+            .sat-textarea:focus {
+                border-color: var(--teal);
+            }
+            .sat-textarea::placeholder {
+                color: var(--t4);
+            }
+            .btn-sat-submit {
+                width: 100%;
+                background: var(--teal);
+                color: white;
+                padding: 13px;
+                border-radius: var(--r-xl);
+                font-family: 'Syne', sans-serif;
+                font-size: 0.92rem;
+                font-weight: 700;
+                transition: all 200ms var(--ease);
+                box-shadow: 0 4px 14px rgba(13, 148, 136, .3);
+            }
+            .btn-sat-submit:hover {
+                background: var(--teal-l);
+                transform: translateY(-1px);
+            }
+        </style>
+    </head>
+    <body
+        class="landing-page">
+
+        <!-- THEME TOGGLE -->
+        <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">
+            <span class="material-symbols-rounded ms" id="theme-icon">dark_mode</span>
+        </button>
+
+        <!-- LANDING SCREEN -->
+        <div id="landing-screen">
+            <div class="sl-bg">
+                <div class="sl-orb1"></div>
+                <div class="sl-orb2"></div>
+                <div class="sl-orb3"></div>
+            </div>
+            <div class="sl-top">
+                <div class="sl-logo-wrap">
+                    <div class="sl-logo">
+                        <span class="material-symbols-rounded ms" style="font-size:1.7rem;color:white;">home</span>
+                    </div>
+                    <div class="sl-logo-ring"></div>
+                </div>
+                <div class="sl-wordmark">KEFFI<span class="r">ROOMS</span>
+                </div>
+                <div class="sl-tagline">NSUK Student Lodges</div>
+                <div class="sl-badge">
+                    <span class="material-symbols-rounded ms" style="font-size:.75rem;color:var(--teal-l);">verified_user</span>
+                    <strong>NSUK's</strong>&nbsp;Most Trusted Accommodation Portal
+                </div>
+            </div>
+
+            <!-- LIVE VERIFIED LISTING (social proof) -->
+            <div class="lp-live-proof" id="lp-live-proof">
+                <div class="lp-live-hdr">
+                    <span class="lp-live-dot"></span>
+                    <span>Live verified listing on KeffiRooms</span>
+                </div>
+                <div class="lp-feat-slot" id="lp-feat-slot">
+                    <div class="lp-feat-skeleton" id="lp-feat-skeleton">
+                        <div class="sk-thumb"></div>
+                        <div class="sk-lines">
+                            <div class="sk-line w60"></div>
+                            <div class="sk-line w40"></div>
+                            <div class="sk-line w60"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="lp-mini-stats">
+                    <span><strong id="lp-verified-inline">—</strong> verified</span>
+                    <span class="lp-dot">·</span>
+                    <span><strong id="lp-agents-inline">—</strong> agents</span>
+                </div>
+            </div>
+
+            <!-- ROLE CARDS -->
+            <div class="sl-cards">
+                <button class="sl-card teal" onclick="handleRoleClick('seeker', event)">
+                    <div class="sl-card-icon teal">
+                        <span class="material-symbols-rounded ms" style="font-size:1.2rem;">travel_explore</span>
+                    </div>
+                    <div class="sl-card-text">
+                        <div class="sl-card-title">I am a Student Seeker</div>
+                        <div class="sl-card-sub">Browse verified rooms, contact agents securely</div>
+                    </div>
+                    <div class="sl-card-arrow">
+                        <span class="material-symbols-rounded ms" style="font-size:1.1rem;">chevron_right</span>
+                    </div>
+                </button>
+                <button class="sl-card gold" onclick="handleRoleClick('agent', event)">
+                    <div class="sl-card-icon gold">
+                        <span class="material-symbols-rounded ms" style="font-size:1.2rem;">business_center</span>
+                    </div>
+                    <div class="sl-card-text">
+                        <div class="sl-card-title">I am a Property Agent</div>
+                        <div class="sl-card-sub">List apartments, manage leads and bookings</div>
+                    </div>
+                    <div class="sl-card-arrow">
+                        <span class="material-symbols-rounded ms" style="font-size:1.1rem;">chevron_right</span>
+                    </div>
+                </button>
+                <button class="sl-card violet" onclick="handleRoleClick('admin', event)">
+                    <div class="sl-card-icon violet">
+                        <span class="material-symbols-rounded ms" style="font-size:1.2rem;">admin_panel_settings</span>
+                    </div>
+                    <div class="sl-card-text">
+                        <div class="sl-card-title">I am an NSUK Admin</div>
+                        <div class="sl-card-sub">Verify listings, manage agents and trust badges</div>
+                    </div>
+                    <div class="sl-card-arrow">
+                        <span class="material-symbols-rounded ms" style="font-size:1.1rem;">chevron_right</span>
+                    </div>
+                </button>
+            </div>
+
+            <div class="sl-footer">
+                <button class="sl-guest-btn" onclick="handleRoleClick('guest', event)">
+                    <span class="material-symbols-rounded ms" style="font-size:.85rem;">visibility</span>
+                    Browse as Guest
+                </button>
+            </div>
+            <div class="lp-scroll-hint">
+                <span class="material-symbols-rounded ms" style="font-size:.9rem;vertical-align:-3px;">expand_more</span>
+                Scroll for how it works
+            </div>
+        </div>
+
+        <!-- SCROLLABLE INFO (below fold) -->
+        <div class="landing-below">
+
+            <!-- SOCIAL PROOF -->
+            <div style="padding:36px 20px 0;max-width:420px;margin:0 auto;">
+                <div class="social-proof">
+                    <div class="sp-avatars">
+                        <div class="sp-av">AY</div>
+                        <div class="sp-av" style="background:linear-gradient(135deg,#C9863A,#A06828);">IB</div>
+                        <div class="sp-av" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);">CH</div>
+                        <div class="sp-av" style="background:linear-gradient(135deg,#10B981,#0F766E);">MU</div>
+                        <div class="sp-av" style="background:linear-gradient(135deg,#EF4444,#B91C1C);">FA</div>
+                    </div>
+                    <div>
+                        <div class="sp-text">
+                            <strong id="sp-count">0</strong>
+                            students housed this semester</div>
+                        <div class="sp-stars">★★★★★</div>
+                    </div>
+                </div>
+                <div class="trust-badges">
+                    <div class="trust-badge">
+                        <span class="material-symbols-rounded ms">verified_user</span>
+                        GPS Verified</div>
+                    <div class="trust-badge">
+                        <span class="material-symbols-rounded ms">lock</span>
+                        Coordinator-Led</div>
+                    <div class="trust-badge">
+                        <span class="material-symbols-rounded ms">support_agent</span>
+                        Admin Verified</div>
+                </div>
+            </div>
+
+            <!-- STATS -->
+            <div style="padding:0 20px;max-width:420px;margin:0 auto;">
+                <div class="stats-strip">
+                    <div class="stat-item">
+                        <div class="stat-n t" id="lp-total">0</div>
+                        <div class="stat-l">Listings</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-n g" id="lp-verified">0</div>
+                        <div class="stat-l">Verified</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-n gld" id="lp-agents">0</div>
+                        <div class="stat-l">Agents</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FEATURED -->
+            <div class="feat-wrap" id="feat-wrap" style="display:none;padding:0 20px;">
+                <div class="feat-card" id="feat-card"></div>
+            </div>
+
+            <!-- HOW IT WORKS -->
+            <div class="hiw">
+                <div class="hiw-title">How KeffiRooms Works:</div>
+                <div class="hiw-step">
+                    <div class="step-num t">1</div>
+                    <div>
+                        <div class="step-t">Pick Your Preferred Zone</div>
+                        <div class="step-s">Filter by popular NSUK student locations: High Court Road, Angwan Lambu, Kelv, Pyanku.</div>
+                    </div>
+                </div>
+                <div class="hiw-step">
+                    <div class="step-num g">2</div>
+                    <div>
+                        <div class="step-t">Verify Trust Badge</div>
+                        <div class="step-s">Every verified listing has been physically inspected by our Admin team so you don't lose money to scammers.</div>
+                    </div>
+                </div>
+                <div class="hiw-step">
+                    <div class="step-num t">3</div>
+                    <div>
+                        <div class="step-t">Connect &amp; Secure Lodge</div>
+                        <div class="step-s">KeffiRooms connects you with verified agents through our coordinator on WhatsApp — inquiries go through us first so you are not dealing with strangers alone.</div>
+                    </div>
+                </div>
+                <div class="hiw-step">
+                    <div class="step-num g">4</div>
+                    <div>
+                        <div class="step-t">Confirm &amp; Complete</div>
+                        <div class="step-s">After visiting the property, both parties can confirm with KeffiRooms that the connection went well. Coordination fees apply only after a successful match — never pay an agent directly before our team confirms.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div style="background:var(--bg2);border-top:1px solid var(--border);padding:28px 20px;text-align:center;">
+                <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
+                    <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--teal),var(--teal-d));display:flex;align-items:center;justify-content:center;">
+                        <span class="material-symbols-rounded ms" style="font-size:.9rem;color:white;">home</span>
+                    </div>
+                    <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;">KEFFI<span style="color:var(--teal-l);">ROOMS</span>
+                    </div>
+                </div>
+                <div style="font-size:.74rem;color:var(--t3);margin-bottom:14px;line-height:1.6;">Modern, trusted property listing platform for NSUK students.</div>
+                <div style="font-size:.72rem;margin-bottom:10px;"><a href="terms.html" style="color:var(--teal-l);font-weight:600;">Terms &amp; Conditions</a></div>
+                <div style="font-size:.7rem;color:var(--t4);">© 2026 KeffiRooms Inc. Built for NSUK Communities.</div>
+            </div>
+        </div>
+
+        <!-- TERMS & CONDITIONS POPUP -->
+        <div class="terms-overlay" id="terms-overlay">
+            <div class="terms-sheet">
+                <div class="terms-handle"></div>
+                <div class="terms-title">
+                    <span class="material-symbols-rounded ms">gavel</span>
+                    Terms &amp; Data Sharing Policy
+                </div>
+                <div class="terms-sub">Please read before we connect you with an agent. This takes 30 seconds.</div>
+
+                <div class="terms-section">
+                    <div class="terms-section-title">
+                        <span class="material-symbols-rounded ms">share</span>
+                        What We Share</div>
+                    <div class="terms-item">
+                        <span class="material-symbols-rounded ms">check_circle</span>Your contact (phone) is shared with KeffiRooms admin only — not directly with agents</div>
+                    <div class="terms-item">
+                        <span class="material-symbols-rounded ms">check_circle</span>Listing details (title, area, price, amenities) are shared with you</div>
+                    <div class="terms-item">
+                        <span class="material-symbols-rounded ms">check_circle</span>Agent information is shared only after admin verification</div>
+                </div>
+
+                <div class="terms-highlight">
+                    <span class="material-symbols-rounded ms">support_agent</span>
+                    <span>
+                        <strong>Transparent Process:</strong>
+                        KeffiRooms will contact BOTH you and the agent to verify identities before connecting you. You will never pay anyone without admin confirmation.</span>
+                </div>
+
+                <div class="terms-section">
+                    <div class="terms-section-title">
+                        <span class="material-symbols-rounded ms">security</span>
+                        Your Protection</div>
+                    <div class="terms-item">
+                        <span class="material-symbols-rounded ms">verified_user</span>All agents are manually approved by our admin team</div>
+                    <div class="terms-item">
+                        <span class="material-symbols-rounded ms">location_on</span>All listings include GPS-verified photo metadata</div>
+                    <div class="terms-item">
+                        <span class="material-symbols-rounded ms">payments</span>Payment coordination is handled through KeffiRooms — never pay an agent directly without our confirmation</div>
+                </div>
+
+                <div class="terms-divider"></div>
+
+                <div class="terms-fee-box">
+                    <strong>Coordination Fee Notice</strong>
+                    KeffiRooms charges a coordination fee only after a successful connection is confirmed: <strong>₦2,000 from the seeker</strong> and <strong>₦5,000 from the agent</strong> (₦7,000 total per connection). This covers trust verification, identity confirmation, and secure WhatsApp coordination. Fees are never collected before both parties confirm the viewing was successful.
+                </div>
+
+                <div class="terms-section">
+                    <div class="terms-section-title">
+                        <span class="material-symbols-rounded ms">star</span>
+                        After Your Visit</div>
+                    <div class="terms-item">
+                        <span class="material-symbols-rounded ms">thumb_up</span>You will be asked to confirm satisfaction after meeting the agent</div>
+                    <div class="terms-item">
+                        <span class="material-symbols-rounded ms">rate_review</span>Your rating helps protect other NSUK students from fraud</div>
+                </div>
+
+                <div class="terms-actions">
+                    <label class="terms-agree-row" for="terms-agree" style="margin-bottom:14px;">
+                        <input type="checkbox" id="terms-agree">
+                        <span>I have read and agree to the <a href="terms.html?return=index.html%23terms-agree" onclick="event.stopPropagation(); if(pendingRole) sessionStorage.setItem('kr6_terms_pending_role', pendingRole);">Terms &amp; Conditions</a></span>
+                    </label>
+                    <button class="btn-terms-accept" id="terms-accept-btn" onclick="acceptTermsAndProceed()">
+                        <span class="material-symbols-rounded ms">check_circle</span>
+                        I Agree &amp; Proceed
+                    </button>
+                    <button class="btn-terms-decline" onclick="closeTerms()">Decline</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SATISFACTION CONFIRMATION MODAL -->
+        <div class="sat-overlay" id="sat-overlay">
+            <div class="sat-card">
+                <div class="sat-icon">🏠</div>
+                <div class="sat-title">How was your visit?</div>
+                <div class="sat-sub">Your honest feedback protects other NSUK students from fraud and helps us maintain trust.</div>
+                <div class="sat-stars" id="sat-stars">
+                    <span class="sat-star" onclick="rateStar(1)">★</span>
+                    <span class="sat-star" onclick="rateStar(2)">★</span>
+                    <span class="sat-star" onclick="rateStar(3)">★</span>
+                    <span class="sat-star" onclick="rateStar(4)">★</span>
+                    <span class="sat-star" onclick="rateStar(5)">★</span>
+                </div>
+                <textarea class="sat-textarea" id="sat-comment" placeholder="Tell us about your experience (optional)..."></textarea>
+                <button class="btn-sat-submit" onclick="submitSatisfaction()">Submit Feedback</button>
+            </div>
+        </div>
+
+        <!-- TOAST -->
+        <div class="toast" id="toast">
+            <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">check_circle</span>
+            <span id="toast-msg">Done</span>
+        </div>
+
+        <script src="js/config.js"></script>
+        <script src="js/api.js"></script>
+        <script src="js/db.js"></script>
+        <script src="js/terms.js"></script>
+        <script src="js/auth.js"></script>
+        <script>
+            // ── PENDING ROLE ──
+            let pendingRole = null;
+            let termsAccepted = localStorage.getItem('kr6_terms_accepted') === 'true';
+            let satRating = 0;
+
+            // ── INIT ──
+            document.addEventListener('DOMContentLoaded', async () => {
+                applyTheme();
+                await initPlatform();
+                await updateLandingStats();
+                await renderFeatured();
+                // check if coming back after satisfaction confirmation
+                const pendingSat = sessionStorage.getItem('kr6_pending_satisfaction');
+                if (pendingSat) {
+                    sessionStorage.removeItem('kr6_pending_satisfaction');
+                    setTimeout(() => openSatisfaction(), 600);
+                }
+                initTermsReturnFocus({
+                    focusIds: ['terms-agree'],
+                    onReturn() {
+                        const saved = sessionStorage.getItem('kr6_terms_pending_role');
+                        if (saved) pendingRole = saved;
+                        openTerms();
+                    }
+                });
+            });
+
+            async function updateLandingStats() {
+                try {
+                    const stats = await API.listings.stats();
+                    const el_t = document.getElementById('lp-total');
+                    const el_v = document.getElementById('lp-verified');
+                    const el_a = document.getElementById('lp-agents');
+                    const el_vi = document.getElementById('lp-verified-inline');
+                    const el_ai = document.getElementById('lp-agents-inline');
+                    const el_sp = document.getElementById('sp-count');
+                    if (el_t) animateCount(el_t, stats.total || 0);
+                    if (el_v) animateCount(el_v, stats.verified || 0);
+                    if (el_a) animateCount(el_a, stats.agents || 0);
+                    if (el_vi) animateCount(el_vi, stats.verified || 0);
+                    if (el_ai) animateCount(el_ai, stats.agents || 0);
+                    if (el_sp) animateCount(el_sp, Math.max(stats.seekers || 0, stats.verified || 0, 12));
+                } catch { /* offline */ }
+            }
+
+            function renderHeroFeaturedCard(l) {
+                const slot = document.getElementById('lp-feat-slot');
+                if (!slot || !l) return;
+                const photo = l.photos && l.photos[0];
+                const tag = l.listingTag || (l.serialNumber ? formatListingTag(l.serialNumber) : '');
+                const imgHtml = photo
+                    ? `<img class="lp-hero-feat-img" src="${photo}" alt="${escapeHtml(l.title)}">`
+                    : `<div class="lp-hero-feat-img-ph"><span class="material-symbols-rounded">image</span></div>`;
+                slot.innerHTML = `
+                  <button type="button" class="lp-hero-feat" onclick="openFeaturedListing()">
+                    ${imgHtml}
+                    <div class="lp-hero-feat-body">
+                      <div class="lp-hero-feat-top">
+                        <span class="lp-hero-feat-area">${escapeHtml(l.area || 'Keffi')}</span>
+                        ${listingStatusBadgeHtml(l, { compact: true })}
+                      </div>
+                      <div class="lp-hero-feat-title">${tag ? `<span class="listing-tag">${tag}</span> ` : ''}${escapeHtml(l.title)}</div>
+                      <div class="lp-hero-feat-meta">
+                        <span class="lp-hero-feat-price">N${fmtN(l.price)}/yr</span>
+                        <span>${escapeHtml(l.type || 'Room')}</span>
+                        ${l.distance ? `<span>${escapeHtml(l.distance)}</span>` : ''}
+                      </div>
+                    </div>
+                  </button>`;
+            }
+
+            function renderFeaturedEmpty() {
+                const slot = document.getElementById('lp-feat-slot');
+                if (!slot) return;
+                slot.innerHTML = `
+                  <div class="lp-feat-empty">
+                    New verified lodges are added as admin approves them.
+                    <button type="button" class="sl-guest-btn" style="margin:12px auto 0;display:inline-flex;" onclick="handleRoleClick('guest', event)">
+                      Browse as guest
+                    </button>
+                  </div>`;
+            }
+
+            function openFeaturedListing() {
+                sessionStorage.setItem('kr6_browse_intent', 'featured');
+                seekerGuest();
+            }
+
+            async function fetchFeaturedListing() {
+                try {
+                    const data = await API.listings.featured();
+                    if (data.listing && data.listing.status === 'verified') return data.listing;
+                } catch { /* try list */ }
+                try {
+                    const list = await API.listings.list({ verifiedOnly: 'true' });
+                    const items = (list.listings || []).filter((l) => l.status === 'verified');
+                    return items.find((l) => l.photos?.length) || items[0] || null;
+                } catch {
+                    return null;
+                }
+            }
+
+            async function renderFeatured() {
+                const vl = await fetchFeaturedListing();
+                const wrap = document.getElementById('feat-wrap');
+                const card = document.getElementById('feat-card');
+
+                if (vl) {
+                    renderHeroFeaturedCard(vl);
+                } else {
+                    renderFeaturedEmpty();
+                }
+
+                if (!vl || !wrap || !card) return;
+                wrap.style.display = 'block';
+                card.innerHTML = `
+      <div class="feat-inner" onclick="openFeaturedListing()">
+        <div class="feat-thumb">
+          ${vl.photos?.[0]
+            ? `<img src="${vl.photos[0]}" alt="${escapeHtml(vl.title)}">`
+            : `<div class="feat-thumb-ph"><span class="material-symbols-rounded">image</span></div>`}
+        </div>
+        <div class="feat-info">
+          <div>
+            <span class="feat-area">${escapeHtml(vl.area)}</span>
+            ${listingStatusBadgeHtml(vl, { compact: true })}
+          </div>
+          <div class="feat-title">${escapeHtml(vl.title)}</div>
+          <div class="feat-price">N${fmtN(vl.price)} / year</div>
+        </div>
+      </div>`;
+            }
+
+            // ── ROLE CLICK WITH TERMS ──
+            function handleRoleClick(role, event) { // Ripple effect
+                const card = event ?. currentTarget;
+                if (card) {
+                    const ripple = document.createElement('span');
+                    const rect = card.getBoundingClientRect();
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+                    ripple.style.cssText = `position:absolute;border-radius:50%;background:rgba(255,255,255,.14);width:200px;height:200px;margin-left:-100px;margin-top:-100px;left:${x}px;top:${y}px;animation:ripple 500ms ease-out both;pointer-events:none;`;
+                    card.style.position = 'relative';
+                    card.style.overflow = 'hidden';
+                    card.appendChild(ripple);
+                    setTimeout(() => ripple.remove(), 520);
+                }
+
+                pendingRole = role;
+
+                if (role === 'guest') {
+                    setTimeout(() => seekerGuest(), 120);
+                    return;
+                }
+
+                // Show terms if not yet accepted
+                if (! termsAccepted && role === 'seeker') {
+                    setTimeout(() => openTerms(), 120);
+                } else {
+                    setTimeout(() => proceedToRole(role), 120);
+                }
+            }
+
+            function openTerms() {
+                if (pendingRole) sessionStorage.setItem('kr6_terms_pending_role', pendingRole);
+                const cb = document.getElementById('terms-agree');
+                if (cb && !window.location.hash.includes('terms-agree')) cb.checked = false;
+                document.getElementById('terms-overlay').classList.add('open');
+            }
+            function closeTerms() {
+                document.getElementById('terms-overlay').classList.remove('open');
+                pendingRole = null;
+                sessionStorage.removeItem('kr6_terms_pending_role');
+            }
+            function acceptTermsAndProceed() {
+                const cb = document.getElementById('terms-agree');
+                if (!cb?.checked) {
+                    showToast('Please read and agree to the Terms & Conditions');
+                    focusTermsCheckbox('terms-agree');
+                    return;
+                }
+                termsAccepted = true;
+                localStorage.setItem('kr6_terms_accepted', 'true');
+                document.getElementById('terms-overlay').classList.remove('open');
+                sessionStorage.removeItem('kr6_terms_pending_role');
+                proceedToRole(pendingRole);
+            }
+
+            function proceedToRole(role) {
+                const s = getSession();
+                if (s?.loggedIn) {
+                    if (role === 'seeker' && s.role === 'seeker') {
+                        goPage('seeker.html');
+                        return;
+                    }
+                    if (role === 'agent' && (s.role === 'agent' || s.isPromotedAgent)) {
+                        goPage('agent.html');
+                        return;
+                    }
+                    if (role === 'admin' && s.isAdmin) {
+                        goPage('admin.html');
+                        return;
+                    }
+                }
+                if (role === 'seeker') {
+                    goPage('auth-seeker.html');
+                }
+                if (role === 'agent') {
+                    goPage('auth-agent.html');
+                }
+                if (role === 'admin') {
+                    goPage('auth-admin.html');
+                }
+            }
+
+            // ── SATISFACTION FLOW ──
+            function openSatisfaction() {
+                document.getElementById('sat-overlay').classList.add('open');
+            }
+            function rateStar(n) {
+                satRating = n;
+                document.querySelectorAll('.sat-star').forEach((s, i) => {
+                    s.classList.toggle('active', i < n);
+                    if (i < n) {
+                        s.style.animation = `bounceIn 200ms var(--spring) ${
+                            i * 50
+                        }ms both`;
+                    }
+                });
+            }
+            async function submitSatisfaction() {
+                if (! satRating) {
+                    showToast('Please give a rating');
+                    return;
+                }
+                const comment = document.getElementById('sat-comment') ?. value.trim();
+                try {
+                    await API.social.submitReview({rating: satRating, comment});
+                } catch { /* still show thanks */
+                }
+                document.getElementById('sat-overlay').classList.remove('open');
+            
+            showToast('Thank you! Your feedback protects other students.');
+            const msg = encodeURIComponent(`KeffiRooms Satisfaction Report\n\nRating: ${
+                '★'.repeat(satRating)
+            }\nComment: ${
+                comment || 'No comment'
+            }\nTime: ${
+                nowStr()
+            }`);
+            setTimeout(() => window.open(`https://wa.me/${ADMIN_WA}?text=${msg}`, '_blank'), 1000);
+        }
+
+        // ── ANIMATE COUNT ──
+        function animateCount(el, target) {
+            let current = 0;
+            const step = Math.max(1, Math.floor(target / 25));
+            const interval = setInterval(() => {
+                current = Math.min(current + step, target);
+                el.textContent = current + (target > 50 ? '+' : '');
+                if (current >= target) 
+                    clearInterval(interval);
+                
+            }, 40);
+        }
+        </script>
+    </body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>KeffiRooms — Contact Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/seeker.css">
+<style>
+[data-theme="dark"]{--bg:#0A0A0A;--bg2:#111;--bg3:#161616;--bg4:#1C1C1C;--t1:#fff;--t2:rgba(255,255,255,.75);--t3:rgba(255,255,255,.45);--t4:rgba(255,255,255,.25);--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);--sh:0 4px 24px rgba(0,0,0,.45);--sh-lg:0 12px 48px rgba(0,0,0,.55);}
+[data-theme="light"]{--bg:#F4F7F6;--bg2:#fff;--bg3:#EEF2F0;--bg4:#E4EAE8;--t1:#0A1816;--t2:#1A3330;--t3:#2D4A45;--t4:#4A6B65;--border:rgba(13,31,28,.12);--border2:rgba(13,31,28,.2);--sh:0 4px 24px rgba(13,31,28,.1);--sh-lg:0 12px 48px rgba(13,31,28,.14);--teal-l:#0B7A70;}
+
+/* LISTING PREVIEW CARD IN CHAT */
+.listing-preview-card {
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:var(--r-xl); overflow:hidden; margin-bottom:14px;
+  animation:slideUp 300ms var(--ease) both;
+}
+.lpc-img { width:100%; height:160px; overflow:hidden; background:var(--bg4); }
+.lpc-img .photo-gallery { height:100%; }
+.lpc-img .photo-gallery.compact .pg-stage { min-height:160px; height:160px; }
+.lpc-img img { width:100%; height:100%; object-fit:cover; }
+.lpc-body { padding:12px 14px; }
+.lpc-title { font-family:'Syne',sans-serif; font-size:.95rem; font-weight:700; color:var(--t1); margin-bottom:4px; }
+.lpc-meta { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.lpc-tag { display:inline-flex; align-items:center; gap:4px; background:var(--bg4); border:1px solid var(--border); border-radius:20px; padding:3px 9px; font-size:.7rem; color:var(--t3); }
+.lpc-tag .ms { font-size:.78rem; color:var(--teal-l); }
+.lpc-price { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:800; color:var(--teal-l); }
+.lpc-price span { font-size:.68rem; font-weight:400; color:var(--t3); }
+
+/* TRUST PROTOCOL CARD */
+.trust-protocol-card {
+  background:linear-gradient(135deg, rgba(13,148,136,.12), rgba(13,148,136,.06));
+  border:1.5px solid var(--teal-b); border-radius:var(--r-xl);
+  padding:16px; margin-bottom:14px;
+  animation:slideUp 300ms var(--ease) 80ms both;
+}
+.tpc-header { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.tpc-header .ms { font-size:1.2rem; color:var(--teal-l); }
+.tpc-title { font-family:'Syne',sans-serif; font-size:.92rem; font-weight:700; color:var(--teal-l); }
+.tpc-step { display:flex; gap:10px; align-items:flex-start; margin-bottom:10px; }
+.tpc-num { width:24px; height:24px; border-radius:50%; background:var(--teal-p); border:1px solid var(--teal-b); display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-size:.72rem; font-weight:800; color:var(--teal-l); flex-shrink:0; }
+.tpc-text { font-size:.78rem; color:var(--t2); line-height:1.55; flex:1; }
+.tpc-text strong { color:var(--teal-l); }
+
+/* WA CTA BUTTON */
+.btn-wa-cta {
+  width:100%; background:#25D366; color:white;
+  padding:15px; border-radius:var(--r-xl);
+  font-family:'Syne',sans-serif; font-size:1.0rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  transition:all 200ms var(--ease);
+  box-shadow:0 6px 22px rgba(37,211,102,.35);
+  position:relative; overflow:hidden; margin-bottom:10px;
+}
+.btn-wa-cta::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,transparent,rgba(255,255,255,.1)); opacity:0; transition:opacity 200ms; }
+.btn-wa-cta:hover::before { opacity:1; }
+.btn-wa-cta:hover { background:#22C55E; box-shadow:0 8px 28px rgba(37,211,102,.45); transform:translateY(-2px); }
+.btn-wa-cta:active { transform:scale(.98); }
+.btn-wa-cta .ms { font-size:1.2rem; }
+
+.btn-wa-call {
+  width:100%; background:var(--teal); color:white;
+  padding:13px; border-radius:var(--r-xl);
+  font-family:'Syne',sans-serif; font-size:.92rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:all 180ms var(--ease);
+  box-shadow:0 4px 14px rgba(13,148,136,.3);
+  margin-bottom:10px;
+}
+.btn-wa-call:hover { background:var(--teal-l); transform:translateY(-1px); }
+.btn-wa-call .ms { font-size:1rem; }
+
+.privacy-note {
+  display:flex; align-items:flex-start; gap:7px;
+  font-size:.72rem; color:var(--t4); line-height:1.55;
+  padding:10px 12px; background:var(--bg3); border-radius:var(--r);
+  border:1px solid var(--border);
+}
+.privacy-note .ms { font-size:.85rem; color:var(--teal-l); flex-shrink:0; margin-top:1px; }
+
+/* SATISFACTION BANNER (shown after visit) */
+.sat-banner {
+  background:var(--gold-p); border:1px solid var(--gold-b);
+  border-radius:var(--r-xl); padding:16px; margin-top:14px;
+  display:none; animation:bounceIn 400ms var(--spring) both;
+}
+.sat-banner-title { font-family:'Syne',sans-serif; font-size:.88rem; font-weight:700; color:var(--gold-l); margin-bottom:5px; display:flex; align-items:center; gap:6px; }
+.sat-banner-title .ms { font-size:1rem; }
+.sat-banner-sub { font-size:.76rem; color:var(--t3); margin-bottom:12px; line-height:1.5; }
+.btn-confirm-sat { width:100%; background:var(--gold); color:white; padding:12px; border-radius:var(--r-lg); font-family:'Syne',sans-serif; font-size:.88rem; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 180ms; }
+.btn-confirm-sat:hover { background:var(--gold-l); }
+.btn-confirm-sat .ms { font-size:1rem; }
+
+/* SAT OVERLAY */
+.sat-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:300;
+  display:none; align-items:center; justify-content:center; padding:20px;
+  backdrop-filter:blur(6px);
+}
+.sat-overlay.open { display:flex; animation:backdropIn 250ms ease both; }
+.sat-card {
+  background:var(--bg2); border-radius:var(--r-2xl);
+  padding:24px 20px; width:100%; max-width:360px; text-align:center;
+  animation:bounceIn 380ms var(--spring) both;
+  border:1px solid var(--border);
+}
+.sat-emoji { font-size:2.8rem; margin-bottom:12px; }
+.sat-title { font-family:'Syne',sans-serif; font-size:1.15rem; font-weight:800; color:var(--t1); margin-bottom:6px; }
+.sat-sub { font-size:.78rem; color:var(--t3); line-height:1.6; margin-bottom:18px; }
+.sat-stars { display:flex; gap:8px; justify-content:center; margin-bottom:18px; }
+.sat-star { font-size:2.2rem; cursor:pointer; transition:transform 200ms var(--spring); color:var(--bg4); line-height:1; }
+.sat-star.active { color:#F59E0B; }
+.sat-star:hover { transform:scale(1.25); }
+.sat-textarea { width:100%; background:var(--bg3); border:1.5px solid var(--border); border-radius:var(--r-lg); padding:11px 13px; font-size:.82rem; color:var(--t1); outline:none; resize:none; height:75px; margin-bottom:14px; font-family:'Inter',sans-serif; transition:border-color 180ms; }
+.sat-textarea:focus { border-color:var(--teal); }
+.sat-textarea::placeholder { color:var(--t4); }
+.btn-sat-submit { width:100%; background:var(--teal); color:white; padding:13px; border-radius:var(--r-xl); font-family:'Syne',sans-serif; font-size:.92rem; font-weight:700; transition:all 180ms var(--ease); box-shadow:0 4px 14px rgba(13,148,136,.3); margin-bottom:8px; }
+.btn-sat-submit:hover { background:var(--teal-l); transform:translateY(-1px); }
+.btn-sat-cancel { width:100%; background:transparent; border:1px solid var(--border); color:var(--t3); padding:11px; border-radius:var(--r-xl); font-size:.84rem; transition:all 180ms; }
+.btn-sat-cancel:hover { border-color:var(--border2); }
+</style>
+</head>
+<body>
+
+<div style="display:flex;flex-direction:column;min-height:100vh;background:var(--bg);">
+
+  <!-- CHAT HEADER -->
+  <div class="chat-header">
+    <button class="chat-back" onclick="goBack()">
+      <span class="material-symbols-rounded ms" style="font-size:1.1rem;">arrow_back</span>
+    </button>
+    <div class="chat-av" id="chat-av" style="background:linear-gradient(135deg,var(--teal-d),var(--teal));">KR</div>
+    <div class="chat-agent-info">
+      <div class="chat-agent-name">KeffiRooms Support</div>
+      <div class="chat-status">Coordinator Online</div>
+    </div>
+    <div class="chat-actions">
+      <button class="chat-icon-btn" onclick="callKeffiRooms()" title="Call coordinator">
+        <span class="material-symbols-rounded ms" style="font-size:1rem;">call</span>
+      </button>
+      <button class="chat-icon-btn" onclick="openSatisfaction()" title="Rate your experience">
+        <span class="material-symbols-rounded ms" style="font-size:1rem;">star</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- CHAT BODY -->
+  <div class="chat-body" id="chat-body" style="flex:1;padding:16px;overflow-y:auto;">
+
+    <!-- LISTING PREVIEW injected by JS -->
+    <div id="listing-preview"></div>
+
+    <!-- TRUST PROTOCOL -->
+    <div class="trust-protocol-card">
+      <div class="tpc-header">
+        <span class="material-symbols-rounded ms">verified_user</span>
+        <div class="tpc-title">KeffiRooms Trust Protocol</div>
+      </div>
+      <div class="tpc-step">
+        <div class="tpc-num">1</div>
+        <div class="tpc-text">You send your inquiry via WhatsApp to <strong>KeffiRooms coordinator</strong>. Agent info is NOT shared directly.</div>
+      </div>
+      <div class="tpc-step">
+        <div class="tpc-num">2</div>
+        <div class="tpc-text"><strong>KeffiRooms verifies both parties</strong> — your identity and the agent's credibility — before connecting you.</div>
+      </div>
+      <div class="tpc-step">
+        <div class="tpc-num">3</div>
+        <div class="tpc-text">Coordinator creates a <strong>3-person WhatsApp group</strong>: You + Agent + KeffiRooms. No payment without coordinator confirmation.</div>
+      </div>
+      <div class="tpc-step">
+        <div class="tpc-num">4</div>
+        <div class="tpc-text">After your visit, <strong>confirm satisfaction</strong>. Coordination fees are collected only after a successful connection: <strong>₦2,000</strong> from the seeker and <strong>₦5,000</strong> from the agent.</div>
+      </div>
+    </div>
+
+    <!-- WA BUTTONS -->
+    <div id="wa-buttons"></div>
+
+    <!-- PRIVACY NOTE -->
+    <div class="privacy-note">
+      <span class="material-symbols-rounded ms">lock</span>
+      Agent contact details are shared privately only after KeffiRooms coordinator verification. Your number is never shared without your consent.
+    </div>
+
+    <!-- SATISFACTION BANNER (shown 2hrs after contact) -->
+    <div class="sat-banner" id="sat-banner">
+      <div class="sat-banner-title">
+        <span class="material-symbols-rounded ms">rate_review</span>
+        How was your visit?
+      </div>
+      <div class="sat-banner-sub">Already visited the property? Share your experience to help other NSUK students stay safe from fraud.</div>
+      <button class="btn-confirm-sat" onclick="openSatisfaction()">
+        <span class="material-symbols-rounded ms" style="font-size:1rem;">star</span>
+        Confirm Satisfaction &amp; Rate
+      </button>
+    </div>
+
+    <!-- MESSAGES -->
+    <div id="messages"></div>
+  </div>
+
+  <!-- CHAT INPUT -->
+  <div class="chat-input-row">
+    <input type="text" id="chat-input"
+           placeholder="Ask about inspection, price negotiation..."
+           onkeydown="if(event.key==='Enter')sendMessage()">
+    <button class="chat-send" onclick="sendMessage()">
+      <span class="material-symbols-rounded ms" style="font-size:1.1rem;">send</span>
+    </button>
+  </div>
+</div>
+
+<!-- SATISFACTION OVERLAY -->
+<div class="sat-overlay" id="sat-overlay">
+  <div class="sat-card">
+    <div class="sat-emoji">🏠</div>
+    <div class="sat-title">Rate Your Experience</div>
+    <div class="sat-sub">Your honest feedback protects other NSUK students from fraud and helps us improve.</div>
+    <div class="sat-stars" id="sat-stars">
+      <span class="sat-star" onclick="rateStar(1)">★</span>
+      <span class="sat-star" onclick="rateStar(2)">★</span>
+      <span class="sat-star" onclick="rateStar(3)">★</span>
+      <span class="sat-star" onclick="rateStar(4)">★</span>
+      <span class="sat-star" onclick="rateStar(5)">★</span>
+    </div>
+    <textarea class="sat-textarea" id="sat-comment"
+      placeholder="Tell us about your experience — was the agent professional? Was the house as described?"></textarea>
+    <button class="btn-sat-submit" onclick="submitSatisfaction()">Submit Feedback</button>
+    <button class="btn-sat-cancel" onclick="document.getElementById('sat-overlay').classList.remove('open')">Maybe Later</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">check_circle</span>
+  <span id="toast-msg">Done</span>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script>
+let chatListing = null;
+let satRating   = 0;
+let conversationId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  applyTheme();
+  await initPlatform();
+  await bootstrapAuth();
+
+  const raw = sessionStorage.getItem('kr6_chat_listing');
+  conversationId = sessionStorage.getItem('kr6_conversation_id');
+  if (raw) {
+    chatListing = sanitizeListingForSeeker(JSON.parse(raw));
+    buildChatUI();
+  } else {
+    document.getElementById('listing-preview').innerHTML =
+      '<div style="font-size:.82rem;color:var(--t3);text-align:center;padding:20px;">No listing selected.</div>';
+  }
+});
+
+function buildChatUI() {
+  const l = chatListing;
+  if (!l) return;
+  const session = getSession();
+
+  // Listing preview card
+  document.getElementById('listing-preview').innerHTML = `
+    <div class="listing-preview-card">
+      ${l.photos && l.photos.length
+        ? `<div class="lpc-img">${listingPhotoGalleryHtml(l.photos, `chat-${l.id}`, { compact: true, alt: l.title })}</div>`
+        : ''}
+      <div class="lpc-body">
+        <div class="lpc-title">${l.title}</div>
+        <div class="lpc-meta">
+          <span class="lpc-tag"><span class="material-symbols-rounded ms">location_on</span>${l.area}${l.distance ? ' • ' + l.distance : ''}</span>
+          <span class="lpc-tag"><span class="material-symbols-rounded ms">door_open</span>${l.type || 'Room'}</span>
+          ${listingStatusBadgeHtml(l)}
+        </div>
+        ${l.amenities && l.amenities.length
+          ? `<div class="lpc-meta">${l.amenities.slice(0,4).map(a=>`<span class="lpc-tag"><span class="material-symbols-rounded ms">check_circle</span>${a}</span>`).join('')}${l.amenities.length>4?`<span class="lpc-tag">+${l.amenities.length-4} more</span>`:''}</div>`
+          : ''}
+        <div class="lpc-price">₦${fmtN(l.price)}<span>/year</span></div>
+      </div>
+    </div>`;
+
+  // Message seeker sends to KeffiRooms — no agent phone or private agent details
+  const seekerWaUrl = keffiRoomsWhatsAppUrl(listingSeekerInquiryMessage(l, session));
+
+  document.getElementById('wa-buttons').innerHTML = `
+    <a href="${seekerWaUrl}"
+       target="_blank"
+       class="btn-wa-cta"
+       onclick="recordContact()">
+      <span class="material-symbols-rounded ms">chat</span>
+      Send Inquiry to KeffiRooms
+    </a>
+    <button class="btn-wa-call" onclick="callKeffiRooms()">
+      <span class="material-symbols-rounded ms" style="font-size:1rem;">call</span>
+      Call KeffiRooms Coordinator
+    </button>`;
+}
+
+function recordContact() {
+  setTimeout(() => {
+    const banner = document.getElementById('sat-banner');
+    if (banner) banner.style.display = 'block';
+  }, 120000);
+}
+
+function callKeffiRooms() {
+  window.location.href = `tel:${ADMIN_PHONE}`;
+}
+
+function goBack() {
+  window.history.back();
+}
+
+async function sendMessage() {
+  const inp = document.getElementById('chat-input');
+  const msg = inp?.value.trim();
+  if (!msg) return;
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML += `<div class="chat-bubble sent"><p>${escapeHtml(msg)}</p></div>`;
+  inp.value = '';
+  if (conversationId && getSession()?.loggedIn) {
+    try {
+      await API.social.sendMessage(conversationId, msg);
+    } catch { /* show auto reply */ }
+  }
+  setTimeout(() => {
+    msgs.innerHTML += `<div class="chat-bubble"><p>Thank you for your message. Our coordinator will connect you with the verified agent shortly.</p></div>`;
+  }, 1200);
+}
+
+// SATISFACTION
+function openSatisfaction() {
+  document.getElementById('sat-overlay').classList.add('open');
+}
+function rateStar(n) {
+  satRating = n;
+  document.querySelectorAll('.sat-star').forEach((s, i) => {
+    s.classList.toggle('active', i < n);
+    if (i < n) s.style.animation = `bounceIn 200ms var(--spring) ${i*40}ms both`;
+  });
+}
+async function submitSatisfaction() {
+  if (!satRating) { showToast('Please give a rating'); return; }
+  const comment = document.getElementById('sat-comment')?.value.trim();
+  try {
+    await API.social.submitReview({
+      rating: satRating,
+      comment,
+      listingId: chatListing?.id,
+    });
+  } catch { /* ignore */ }
+  document.getElementById('sat-overlay').classList.remove('open');
+  showToast('Thank you! Feedback submitted.');
+  const l = chatListing;
+  const session = getSession();
+  const msg = encodeURIComponent(
+    `⭐ KeffiRooms Satisfaction\nRating: ${'★'.repeat(satRating)}\nListing: ${l?.title || ''}\nSeeker: ${session?.phone || session?.email || 'Guest'}`
+  );
+  setTimeout(() => window.open(`https://wa.me/${ADMIN_WA}?text=${msg}`, '_blank'), 600);
+  const banner = document.getElementById('sat-banner');
+  if (banner) banner.style.display = 'none';
+}
+</script>
+</body>
+</html>

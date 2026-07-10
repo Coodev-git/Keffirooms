@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KeffiRooms — Signing in...</title>
+<link rel="stylesheet" href="css/base.css">
+<style>
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);color:var(--t1);font-family:Inter,sans-serif;}
+.msg{text-align:center;padding:24px;}
+</style>
+</head>
+<body>
+<div class="msg">
+  <p>Completing sign in...</p>
+</div>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  const redirect = params.get('redirect') || 'seeker.html';
+  if (token) {
+    localStorage.setItem(KR_CONFIG.tokenKey, token);
+    try {
+      const data = await API.auth.me();
+      setSession(mapApiUser(data.user));
+    } catch { /* token may still work on next page */ }
+    window.location.replace(redirect);
+  } else {
+    window.location.replace('index.html');
+  }
+})();
+</script>
+</body>
+</html>

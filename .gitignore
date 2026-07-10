@@ -1,0 +1,9 @@
+node_modules/
+server/node_modules/
+server/uploads/
+server/.env
+.env
+server/.env.production.local
+*.pem
+.DS_Store
+*.log
