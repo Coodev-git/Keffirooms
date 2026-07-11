@@ -13,11 +13,25 @@ function required(name, fallback) {
   return v;
 }
 
+const defaultAppUrl = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
+
+function resolvePublicUrl(name, fallback = defaultAppUrl) {
+  const value = process.env[name];
+  if (!value) return fallback;
+  // Ignore localhost URLs pasted from local .env when Render provides the live URL
+  if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(value)) {
+      return process.env.RENDER_EXTERNAL_URL;
+    }
+  }
+  return value;
+}
+
 export const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3000', 10),
-  appUrl: required('APP_URL', 'http://localhost:3000'),
-  clientUrl: required('CLIENT_URL', 'http://localhost:3000'),
+  appUrl: resolvePublicUrl('APP_URL'),
+  clientUrl: resolvePublicUrl('CLIENT_URL'),
   databaseUrl: required('DATABASE_URL', 'postgresql://keffirooms:keffirooms@localhost:5432/keffirooms'),
   jwt: {
     accessSecret: required('JWT_ACCESS_SECRET', 'dev-access-secret-change-in-production-32chars'),
@@ -28,7 +42,7 @@ export const config = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/api/auth/google/callback',
+    callbackUrl: process.env.GOOGLE_CALLBACK_URL || `${defaultAppUrl}/api/auth/google/callback`,
   },
   admin: {
     email: process.env.ADMIN_EMAIL || 'keffirooms@gmail.com',
