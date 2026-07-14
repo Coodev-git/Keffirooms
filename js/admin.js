@@ -36,13 +36,16 @@ function admTab(tab, el) {
   if (tab === 'fees') renderFeeTracker();
   if (tab === 'all') renderAllListings();
   if (tab === 'users') renderUsers();
+  if (tab === 'hsbookings') renderHotelBookings();
+  if (tab === 'hshotels') renderHotelManager();
 }
 
 async function renderAdmin() {
   try {
-    const [pending, agents] = await Promise.all([
+    const [pending, agents, hsBookings] = await Promise.all([
       API.admin.pendingListings(),
       API.admin.pendingAgents(),
+      API.admin.hotelBookings('pending').catch(() => ({ bookings: [] })),
     ]);
     adminState.pendingListings = pending.listings || [];
     adminState.pendingAgents = agents.agents || [];
@@ -50,6 +53,8 @@ async function renderAdmin() {
     if (tcQ) tcQ.textContent = adminState.pendingListings.length;
     const tcAg = document.getElementById('tc-ag');
     if (tcAg) tcAg.textContent = adminState.pendingAgents.length;
+    const tcHs = document.getElementById('tc-hs');
+    if (tcHs) tcHs.textContent = (hsBookings.bookings || []).length;
   } catch (e) {
     showToast('Failed to load admin data');
   }
@@ -502,4 +507,296 @@ function collectFees() {
     );
     window.open(`https://wa.me/${ADMIN_WA}?text=${msg}`, '_blank');
   });
+}
+
+/* ═══════════════════════════════════════
+   HotelSpace (hotel_*) admin
+═══════════════════════════════════════ */
+
+let hotelAdminState = { hotels: [], bookings: [] };
+
+function fmtHsDate(d) {
+  if (!d) return '—';
+  return String(d).slice(0, 10);
+}
+
+async function renderHotelBookings() {
+  const list = document.getElementById('hs-bookings-list');
+  if (!list) return;
+  list.innerHTML = '<div style="padding:16px;color:var(--t3);font-size:.8rem;">Loading bookings…</div>';
+  const status = document.getElementById('hs-booking-filter')?.value || '';
+  try {
+    const data = await API.admin.hotelBookings(status || undefined);
+    hotelAdminState.bookings = data.bookings || [];
+    const pendingCount = hotelAdminState.bookings.filter((b) => b.status === 'pending').length;
+    const tc = document.getElementById('tc-hs');
+    if (tc && !status) tc.textContent = pendingCount;
+    if (!hotelAdminState.bookings.length) {
+      list.innerHTML = '<div class="empty" style="padding:24px 16px;text-align:center;color:var(--t3);">No bookings yet.</div>';
+      return;
+    }
+    list.innerHTML = hotelAdminState.bookings.map((b) => {
+      const actions = [];
+      if (b.status === 'pending') {
+        actions.push(`<button type="button" class="hs-btn-teal" onclick="setHotelBookingStatus('${b.id}','payment_confirmed')">Mark payment confirmed</button>`);
+      }
+      if (b.status === 'payment_confirmed' || b.status === 'hotel_contacted') {
+        const contactMsg = [
+          'KeffiRooms HotelSpace reservation request',
+          `Code: ${b.bookingCode}`,
+          `Room: ${b.roomType}`,
+          `Check-in: ${fmtHsDate(b.requestedCheckinDate)}`,
+          `Check-out: ${fmtHsDate(b.requestedCheckoutDate)}`,
+          `Guest name: ${b.studentName}`,
+          '',
+          'Please confirm if this room is available. Reply YES or NO.',
+        ].join('\n');
+        const wa = b.managerWa
+          ? `https://wa.me/${b.managerWa}?text=${encodeURIComponent(contactMsg)}`
+          : '';
+        if (wa) {
+          actions.push(`<a class="hs-btn-wa" href="${wa}" target="_blank" rel="noopener">Contact hotel</a>`);
+        }
+        if (b.status === 'payment_confirmed') {
+          actions.push(`<button type="button" class="hs-btn-gold" onclick="setHotelBookingStatus('${b.id}','hotel_contacted')">Mark hotel contacted</button>`);
+        }
+        actions.push(`<button type="button" class="hs-btn-teal" onclick="setHotelBookingStatus('${b.id}','confirmed')">Mark confirmed</button>`);
+      }
+      if (!['expired', 'cancelled', 'confirmed'].includes(b.status)) {
+        actions.push(`<button type="button" class="hs-btn-ghost" onclick="setHotelBookingStatus('${b.id}','cancelled')">Cancel</button>`);
+      }
+      return `<div class="hs-adm-card">
+        <div class="hs-adm-card-title">${escapeHtml(b.bookingCode)} · ${escapeHtml(b.hotelName || '')}</div>
+        <div class="hs-adm-meta">
+          <span class="hs-status ${escapeHtml(b.status)}">${escapeHtml(b.status.replace(/_/g, ' '))}</span>
+          · ${escapeHtml(b.roomType)} · ${fmtHsDate(b.requestedCheckinDate)} → ${fmtHsDate(b.requestedCheckoutDate)}
+          · Guest: ${escapeHtml(b.studentName)} (${escapeHtml(b.studentPhone || '')})
+          · Expires: ${fmtHsDate(b.expiresAt)}
+        </div>
+        <div class="hs-adm-actions">${actions.join('')}</div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = `<div style="padding:16px;color:var(--red);font-size:.8rem;">${escapeHtml(e.message || 'Failed to load')}</div>`;
+  }
+}
+
+async function setHotelBookingStatus(id, status) {
+  try {
+    const { booking } = await API.admin.setHotelBookingStatus(id, status);
+    showToast(`Booking ${booking.bookingCode} → ${status.replace(/_/g, ' ')}`);
+    if ((status === 'payment_confirmed' || status === 'hotel_contacted') && booking.contactHotelWhatsappUrl) {
+      // Prefer manual click of Contact Hotel; still open when marking payment confirmed
+      if (status === 'payment_confirmed') {
+        window.open(booking.contactHotelWhatsappUrl, '_blank', 'noopener');
+      }
+    }
+    await renderHotelBookings();
+  } catch (e) {
+    showToast(e.message || 'Update failed');
+  }
+}
+
+async function renderHotelManager() {
+  const list = document.getElementById('hs-hotels-list');
+  const ownersEl = document.getElementById('hs-owners-pending');
+  if (ownersEl) {
+    ownersEl.innerHTML = '<div style="padding:0 16px;color:var(--t3);font-size:.78rem;">Loading registrations…</div>';
+    try {
+      const { owners } = await API.admin.pendingHotelOwners();
+      const tc = document.getElementById('tc-ho');
+      if (tc) tc.textContent = (owners || []).length;
+      if (!owners?.length) {
+        ownersEl.innerHTML = '<div style="padding:0 16px 8px;font-size:.76rem;color:var(--t4);">No pending hotel owners.</div>';
+      } else {
+        ownersEl.innerHTML = owners.map((o) => {
+          const wa = o.wa ? `https://wa.me/${o.wa}?text=${encodeURIComponent(
+            `Hello ${o.name}, this is KeffiRooms admin. We received your hotel registration for "${o.hotelName}" in ${o.area || 'Keffi'}. Please confirm you are available for a quick verification.`
+          )}` : '';
+          return `<div class="hs-adm-card">
+            <div class="hs-adm-card-title">${escapeHtml(o.hotelName || o.name)}</div>
+            <div class="hs-adm-meta">
+              Owner: ${escapeHtml(o.name)} · ${escapeHtml(o.phone || '')} · ${escapeHtml(o.email || '')}<br>
+              Area: ${escapeHtml(o.area || '—')} · Landmark: ${escapeHtml(o.landmark || '—')}<br>
+              Pin: ${o.pinLat != null ? `${o.pinLat}, ${o.pinLng}` : 'missing'} ${o.pinAcc ? `(±${escapeHtml(o.pinAcc)})` : ''}<br>
+              Label: ${escapeHtml(o.locationAddress || '—')}<br>
+              ₦${fmtN(o.priceRangeMin)}–₦${fmtN(o.priceRangeMax)}/night
+            </div>
+            <div class="hs-adm-actions">
+              ${wa ? `<a class="hs-btn-wa" href="${wa}" target="_blank" rel="noopener">WhatsApp owner</a>` : ''}
+              ${o.mapUrl ? `<a class="hs-btn-ghost" href="${escapeHtml(o.mapUrl)}" target="_blank" rel="noopener">Open pin on Maps</a>` : ''}
+              <button type="button" class="hs-btn-teal" onclick="setHotelOwnerStatus('${o.id}','approved')">Approve</button>
+              <button type="button" class="hs-btn-ghost" onclick="setHotelOwnerStatus('${o.id}','denied')">Deny</button>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    } catch (e) {
+      ownersEl.innerHTML = `<div style="padding:0 16px;color:var(--red);font-size:.78rem;">${escapeHtml(e.message || 'Failed')}</div>`;
+    }
+  }
+
+  if (!list) return;
+  list.innerHTML = '<div style="padding:16px;color:var(--t3);font-size:.8rem;">Loading hotels…</div>';
+  try {
+    const data = await API.admin.hotels();
+    hotelAdminState.hotels = data.hotels || [];
+    if (!hotelAdminState.hotels.length) {
+      list.innerHTML = '<div class="empty" style="padding:24px 16px;text-align:center;color:var(--t3);">No hotels yet. Click Add hotel or wait for registrations.</div>';
+      return;
+    }
+    list.innerHTML = hotelAdminState.hotels.map((h) => {
+      const rooms = (h.rooms || []).map((r) => `
+        <div style="display:flex;justify-content:space-between;gap:8px;font-size:.76rem;padding:6px 0;border-top:1px solid var(--border);">
+          <span>${escapeHtml(r.roomType)} · ₦${fmtN(r.price)} · ${r.isAvailable ? 'available' : 'off'}</span>
+          <span>
+            <button type="button" class="hs-btn-ghost" style="padding:4px 8px;" onclick="toggleHotelRoom('${r.id}', ${r.isAvailable ? 'false' : 'true'})">${r.isAvailable ? 'Disable' : 'Enable'}</button>
+          </span>
+        </div>`).join('');
+      return `<div class="hs-adm-card">
+        <div class="hs-adm-card-title">${escapeHtml(h.name)} ${h.isActive ? '' : '(inactive)'} · ${escapeHtml(h.verifyStatus || '')}</div>
+        <div class="hs-adm-meta">₦${fmtN(h.priceRangeMin)}–₦${fmtN(h.priceRangeMax)} · ${escapeHtml(h.area || '')}
+          · Owner: ${escapeHtml(h.ownerName || 'Admin-listed')} (${escapeHtml(h.ownerStatus || '—')})
+          · Address: ${escapeHtml(h.locationAddress || '')}</div>
+        <div class="hs-adm-actions">
+          <button type="button" class="hs-btn-teal" onclick="openHotelForm('${h.id}')">Edit</button>
+          <button type="button" class="hs-btn-gold" onclick="openRoomForm('${h.id}')">Add room</button>
+          <button type="button" class="hs-btn-ghost" onclick="toggleHotelActive('${h.id}', ${h.isActive ? 'false' : 'true'})">${h.isActive ? 'Deactivate' : 'Activate'}</button>
+        </div>
+        <div style="margin-top:8px;">${rooms || '<div style="font-size:.74rem;color:var(--t4);">No rooms yet</div>'}</div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = `<div style="padding:16px;color:var(--red);font-size:.8rem;">${escapeHtml(e.message || 'Failed to load')}</div>`;
+  }
+}
+
+async function setHotelOwnerStatus(id, status) {
+  try {
+    await API.admin.setHotelOwnerStatus(id, status);
+    showToast(status === 'approved' ? 'Hotel owner approved — property is live' : 'Status updated');
+    await renderHotelManager();
+  } catch (e) {
+    showToast(e.message || 'Failed');
+  }
+}
+
+function closeHotelModal() {
+  const bd = document.getElementById('hs-modal-backdrop');
+  if (bd) bd.classList.remove('on');
+}
+
+function openHotelForm(hotelId) {
+  const hotel = hotelId ? hotelAdminState.hotels.find((h) => h.id === hotelId) : null;
+  const modal = document.getElementById('hs-modal');
+  const bd = document.getElementById('hs-modal-backdrop');
+  if (!modal || !bd) return;
+  modal.innerHTML = `
+    <h3>${hotel ? 'Edit hotel' : 'Add hotel'}</h3>
+    <form id="hs-hotel-form" class="hs-form-grid" onsubmit="submitHotelForm(event,'${hotel ? hotel.id : ''}')">
+      <label>Name <input name="name" required value="${escapeHtml(hotel?.name || '')}"></label>
+      <label>Description <input name="description" value="${escapeHtml(hotel?.description || '')}"></label>
+      <label>Area (public) <input name="area" value="${escapeHtml(hotel?.area || '')}"></label>
+      <label>Landmark (public) <input name="landmark" value="${escapeHtml(hotel?.landmark || '')}"></label>
+      <label>Exact address (hidden until payment) <input name="locationAddress" required value="${escapeHtml(hotel?.locationAddress || '')}"></label>
+      <label>Price min <input name="priceRangeMin" type="number" min="0" required value="${hotel?.priceRangeMin ?? ''}"></label>
+      <label>Price max <input name="priceRangeMax" type="number" min="0" required value="${hotel?.priceRangeMax ?? ''}"></label>
+      <label>Rating (optional) <input name="rating" type="number" min="0" max="5" step="0.1" value="${hotel?.rating ?? ''}"></label>
+      <label>Manager WhatsApp <input name="managerPhone" required value="${escapeHtml(hotel?.managerPhone || '')}"></label>
+      <label>Backup phone <input name="backupPhone" value="${escapeHtml(hotel?.backupPhone || '')}"></label>
+      <label>Amenities (comma-separated) <input name="amenities" value="${escapeHtml((hotel?.amenities || []).join(', '))}"></label>
+      <label>Photos <input name="photos" type="file" accept="image/*" multiple></label>
+      <div class="hs-adm-actions">
+        <button type="submit" class="hs-btn-teal">${hotel ? 'Save' : 'Create'}</button>
+        <button type="button" class="hs-btn-ghost" onclick="closeHotelModal()">Cancel</button>
+      </div>
+    </form>`;
+  bd.classList.add('on');
+}
+
+async function submitHotelForm(event, hotelId) {
+  event.preventDefault();
+  const form = event.target;
+  const fd = new FormData(form);
+  const amenities = String(fd.get('amenities') || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  fd.set('amenities', JSON.stringify(amenities));
+  fd.delete('photos');
+  const files = form.querySelector('input[name="photos"]')?.files;
+  const out = new FormData();
+  for (const [k, v] of fd.entries()) out.append(k, v);
+  if (files?.length) {
+    for (const f of files) out.append('photos', f);
+  }
+  try {
+    if (hotelId) await API.admin.updateHotel(hotelId, out);
+    else await API.admin.createHotel(out);
+    showToast(hotelId ? 'Hotel updated' : 'Hotel created');
+    closeHotelModal();
+    await renderHotelManager();
+  } catch (e) {
+    showToast(e.message || 'Save failed');
+  }
+}
+
+function openRoomForm(hotelId) {
+  const modal = document.getElementById('hs-modal');
+  const bd = document.getElementById('hs-modal-backdrop');
+  if (!modal || !bd) return;
+  modal.innerHTML = `
+    <h3>Add room type</h3>
+    <form class="hs-form-grid" onsubmit="submitRoomForm(event,'${hotelId}')">
+      <label>Room type <input name="roomType" placeholder="single / double / deluxe" required></label>
+      <label>Price / night <input name="price" type="number" min="1" required></label>
+      <label>Description <input name="description"></label>
+      <label>Room photos (max 4) <input name="photos" type="file" accept="image/*" multiple></label>
+      <div class="hs-adm-actions">
+        <button type="submit" class="hs-btn-teal">Add to shop</button>
+        <button type="button" class="hs-btn-ghost" onclick="closeHotelModal()">Cancel</button>
+      </div>
+    </form>`;
+  bd.classList.add('on');
+}
+
+async function submitRoomForm(event, hotelId) {
+  event.preventDefault();
+  const form = event.target;
+  const fd = new FormData();
+  fd.append('roomType', form.roomType.value.trim());
+  fd.append('price', form.price.value);
+  fd.append('description', form.description.value.trim());
+  const files = form.photos?.files;
+  if (files?.length) {
+    for (let i = 0; i < Math.min(files.length, 4); i += 1) fd.append('photos', files[i]);
+  }
+  try {
+    await API.admin.createHotelRoom(hotelId, fd);
+    showToast('Room added');
+    closeHotelModal();
+    await renderHotelManager();
+  } catch (e) {
+    showToast(e.message || 'Failed');
+  }
+}
+
+async function toggleHotelRoom(roomId, isAvailable) {
+  try {
+    await API.admin.updateHotelRoom(roomId, { isAvailable: isAvailable === true || isAvailable === 'true' });
+    showToast('Room updated');
+    await renderHotelManager();
+  } catch (e) {
+    showToast(e.message || 'Failed');
+  }
+}
+
+async function toggleHotelActive(hotelId, isActive) {
+  try {
+    await API.admin.updateHotel(hotelId, { isActive: isActive === true || isActive === 'true' });
+    showToast('Hotel updated');
+    await renderHotelManager();
+  } catch (e) {
+    showToast(e.message || 'Failed');
+  }
 }

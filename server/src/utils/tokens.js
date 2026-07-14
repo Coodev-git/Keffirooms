@@ -45,7 +45,8 @@ export function sanitizeUser(row) {
     name: row.name,
     avatarUrl: row.avatar_url,
     emailVerified: row.email_verified,
-    agentStatus: row.agent_status || row.status || null,
+    agentStatus: row.agent_status || (row.role === 'agent' ? row.status : null) || null,
+    hotelOwnerStatus: row.hotel_owner_status || null,
     isPromotedAdmin: row.is_promoted_admin || false,
     createdAt: row.created_at,
   };

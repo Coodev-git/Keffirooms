@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>KeffiRooms — Hotel owner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/landing.css">
+<link rel="stylesheet" href="css/hotels.css">
+<style>
+[data-theme="dark"]{--bg:#0A0A0A;--bg2:#111;--bg3:#161616;--bg4:#1C1C1C;--t1:#fff;--t2:rgba(255,255,255,.75);--t3:rgba(255,255,255,.45);--t4:rgba(255,255,255,.25);--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);}
+[data-theme="light"]{--bg:#F4F7F6;--bg2:#fff;--bg3:#EEF2F0;--bg4:#E4EAE8;--t1:#0A1816;--t2:#1A3330;--t3:#2D4A45;--t4:#4A6B65;--border:rgba(13,31,28,.12);--border2:rgba(13,31,28,.2);--teal-l:#0B7A70;}
+.auth-sheet{max-height:85vh;overflow:auto;}
+</style>
+</head>
+<body>
+<div id="auth-hotel" class="auth-screen on">
+  <div class="auth-nav">
+    <button class="auth-back" onclick="goPage('index.html')">
+      <span class="material-symbols-rounded ms" style="font-size:.88rem;">arrow_back</span> Back
+    </button>
+  </div>
+  <div class="auth-visual">
+    <div class="auth-icon teal">
+      <span class="material-symbols-rounded ms" style="font-size:1.6rem;">hotel</span>
+    </div>
+    <div class="auth-visual-title">List your hotel</div>
+    <div class="auth-visual-sub">Pin your location · WhatsApp verification · students book short stays</div>
+  </div>
+
+  <div class="auth-sheet" id="sheet-login">
+    <div class="sheet-handle"></div>
+    <div class="sheet-label">
+      <span class="material-symbols-rounded ms" style="font-size:.78rem;">login</span>
+      Hotel login
+    </div>
+    <div class="sheet-title">Welcome back</div>
+    <div class="sheet-sub">Sign in after admin approval to manage rooms and bookings.</div>
+    <div class="fg"><label>Email or phone <span class="rq">*</span></label>
+      <input class="fi" type="text" id="ht-email" placeholder="hotel@email.com or 080…" autocomplete="username">
+    </div>
+    <div class="fg"><label>Password <span class="rq">*</span></label>
+      <input class="fi" type="password" id="ht-password" placeholder="Your password" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" onclick="hotelLogin()">
+      <span class="material-symbols-rounded ms" style="font-size:1rem;">login</span>
+      Login
+    </button>
+    <div class="sw-link">New hotel? <a onclick="showHotelRegister()">Register hotel</a></div>
+  </div>
+
+  <div class="auth-sheet" id="sheet-register" style="display:none;">
+    <div class="sheet-handle"></div>
+    <div class="sheet-label">
+      <span class="material-symbols-rounded ms" style="font-size:.78rem;">apartment</span>
+      Register hotel
+    </div>
+    <div class="sheet-title">Add your property</div>
+    <div class="sheet-sub">Like Hotels.ng — pin the hotel on the map. Students see area only until payment.</div>
+
+    <div class="fg"><label>Your name <span class="rq">*</span></label>
+      <input class="fi" id="ht-rg-name" placeholder="Manager / owner name">
+    </div>
+    <div class="fg"><label>Email <span class="rq">*</span></label>
+      <input class="fi" type="email" id="ht-rg-email" placeholder="you@email.com">
+    </div>
+    <div class="fg"><label>WhatsApp <span class="rq">*</span></label>
+      <input class="fi" type="tel" id="ht-rg-phone" placeholder="08012345678" inputmode="tel">
+    </div>
+    <div class="fg"><label>Backup phone</label>
+      <input class="fi" type="tel" id="ht-rg-backup" placeholder="Optional" inputmode="tel">
+    </div>
+    <div class="fg"><label>Hotel name <span class="rq">*</span></label>
+      <input class="fi" id="ht-rg-hotel" placeholder="e.g. Campus Gate Lodge">
+    </div>
+    <div class="fg"><label>Area (shown to students) <span class="rq">*</span></label>
+      <select class="fi" id="ht-rg-area">
+        <option value="">Select area</option>
+        <option>Angwan Lambu</option>
+        <option>High Court</option>
+        <option>Pyanku</option>
+        <option>Kelv</option>
+        <option>Road Safety</option>
+        <option>BCG Area</option>
+        <option>Mararaba</option>
+        <option>Near NSUK gate</option>
+        <option>Other Keffi</option>
+      </select>
+    </div>
+    <div class="fg"><label>Nearby landmark (public)</label>
+      <input class="fi" id="ht-rg-landmark" placeholder="e.g. Opposite NNPC">
+    </div>
+
+    <div class="fg">
+      <label>Hotel location pin <span class="rq">*</span></label>
+      <div class="ht-pin-note">Stand at the hotel (or drop a pin on the map). Do not type a long address — pin it.</div>
+      <div id="ht-pin-mount"></div>
+      <input type="hidden" id="ht-rg-pin-lat">
+      <input type="hidden" id="ht-rg-pin-lng">
+      <input type="hidden" id="ht-rg-pin-acc">
+      <input type="hidden" id="ht-rg-address">
+    </div>
+
+    <div class="fg"><label>Short description</label>
+      <input class="fi" id="ht-rg-desc" placeholder="Quiet rooms for exam weekends…">
+    </div>
+    <div class="fg"><label>Nightly price from (₦) <span class="rq">*</span></label>
+      <input class="fi" type="number" id="ht-rg-min" min="0" placeholder="15000">
+    </div>
+    <div class="fg"><label>Nightly price up to (₦) <span class="rq">*</span></label>
+      <input class="fi" type="number" id="ht-rg-max" min="0" placeholder="35000">
+    </div>
+    <div class="fg"><label>Password (min 8) <span class="rq">*</span></label>
+      <input class="fi" type="password" id="ht-rg-password" placeholder="Create a password">
+    </div>
+    <label class="terms-agree-row" for="ht-terms">
+      <input type="checkbox" id="ht-terms">
+      <span>I agree to the <a href="terms.html?return=auth-hotel.html%23ht-terms">Terms &amp; Conditions</a></span>
+    </label>
+    <button class="btn-primary" onclick="hotelRegister()">
+      <span class="material-symbols-rounded ms" style="font-size:1rem;">send</span>
+      Submit for approval
+    </button>
+    <div class="info-box">
+      <span class="material-symbols-rounded ms" style="font-size:.9rem;">chat</span>
+      After submit, admin WhatsApps you, opens your pin on Maps, then approves. Then add room types.
+    </div>
+    <div class="sw-link" style="margin-top:10px;"><a onclick="showHotelLogin()">Already approved? Login</a></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">check_circle</span>
+  <span id="toast-msg">Done</span>
+</div>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/hotel-pin.js"></script>
+<script>
+let hotelPinApi = null;
+
+async function showHotelRegister() {
+  document.getElementById('sheet-login').style.display = 'none';
+  document.getElementById('sheet-register').style.display = 'block';
+  if (!hotelPinApi) {
+    try {
+      hotelPinApi = await mountHotelPinMap(document.getElementById('ht-pin-mount'), {
+        onChange(pin) {
+          document.getElementById('ht-rg-pin-lat').value = pin.lat;
+          document.getElementById('ht-rg-pin-lng').value = pin.lng;
+          document.getElementById('ht-rg-pin-acc').value = pin.acc || '';
+          document.getElementById('ht-rg-address').value = pin.address || '';
+        },
+      });
+    } catch (e) {
+      showToast(e.message || 'Could not load map');
+    }
+  }
+}
+function showHotelLogin() {
+  document.getElementById('sheet-register').style.display = 'none';
+  document.getElementById('sheet-login').style.display = 'block';
+}
+document.addEventListener('DOMContentLoaded', () => {
+  applyTheme();
+  if (location.hash === '#register') showHotelRegister();
+});
+</script>
+</body>
+</html>

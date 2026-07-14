@@ -15,6 +15,8 @@ import authRoutes from './routes/auth.js';
 import listingRoutes from './routes/listings.js';
 import adminRoutes from './routes/admin.js';
 import socialRoutes from './routes/social.js';
+import hotelRoutes from './routes/hotels.js';
+import hotelOwnerRoutes from './routes/hotelOwner.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientRoot = path.resolve(__dirname, '../../');
@@ -81,6 +83,8 @@ assertProductionReady();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
+app.use('/api/hotels', hotelRoutes);
+app.use('/api/hotel-owner', hotelOwnerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', socialRoutes);
 

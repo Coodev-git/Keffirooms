@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Hotel owner portal — KeffiRooms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/hotels.css">
+<style>
+[data-theme="light"]{--bg:#F4F7F6;--bg2:#fff;--bg3:#EEF2F0;--t1:#0A1816;--t2:#1A3330;--t3:#2D4A45;--t4:#4A6B65;--border:rgba(13,31,28,.12);--border2:rgba(13,31,28,.2);--teal-l:#0B7A70;--gold-l:#9A5E20;}
+[data-theme="dark"]{--bg:#0A0A0A;--bg2:#111;--bg3:#161616;--t1:#fff;--t2:rgba(255,255,255,.75);--t3:rgba(255,255,255,.45);--t4:rgba(255,255,255,.25);--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);--teal-l:#2DD4BF;--gold-l:#F0B429;}
+.ho-body{padding:16px 16px 40px;max-width:640px;margin:0 auto;}
+.ho-hero{margin-bottom:16px;}
+.ho-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--t1);}
+.ho-sub{font-size:.8rem;color:var(--t3);margin-top:4px;line-height:1.5;}
+.ho-badge{display:inline-flex;gap:6px;align-items:center;font-size:.72rem;font-weight:700;padding:5px 10px;border-radius:999px;margin-top:10px;}
+.ho-badge.live{background:rgba(16,185,129,.15);color:#059669;}
+.ho-badge.wait{background:rgba(201,134,58,.15);color:var(--gold-l);}
+.ho-tabs{display:flex;gap:8px;margin:16px 0;overflow-x:auto;}
+.ho-tab{flex:0 0 auto;border:1.5px solid var(--border);background:var(--bg2);border-radius:999px;padding:8px 14px;font-size:.78rem;font-weight:700;cursor:pointer;color:var(--t2);}
+.ho-tab.on{background:var(--t1);color:var(--bg2);border-color:var(--t1);}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="appbar">
+    <div class="appbar-brand">
+      <div class="appbar-logo"><span class="material-symbols-rounded ms" style="font-size:1rem;color:white;">hotel</span></div>
+      <div class="appbar-name">HOTEL<span class="r">SPACE</span></div>
+    </div>
+    <div class="appbar-right">
+      <button class="signout-btn" onclick="toggleTheme()" type="button"><span class="material-symbols-rounded ms" style="font-size:.9rem;" id="theme-icon">dark_mode</span></button>
+      <button class="signout-btn" onclick="signOut()" type="button"><span class="material-symbols-rounded ms" style="font-size:.9rem;">logout</span></button>
+    </div>
+  </nav>
+  <div class="ho-body">
+    <div class="ho-hero">
+      <div class="ho-title" id="ho-title">Your hotel</div>
+      <div class="ho-sub" id="ho-sub">Run your hotel like a shop — room types, photos, WhatsApp bookings.</div>
+      <div id="ho-badge"></div>
+    </div>
+    <div class="ho-tabs">
+      <button type="button" class="ho-tab on" onclick="hoTab('shop',this)">Shop</button>
+      <button type="button" class="ho-tab" onclick="hoTab('bookings',this)">Bookings</button>
+      <button type="button" class="ho-tab" onclick="hoTab('details',this)">Storefront</button>
+    </div>
+    <div id="ho-panel"></div>
+  </div>
+</div>
+<div class="toast" id="toast">
+  <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">check_circle</span>
+  <span id="toast-msg">Done</span>
+</div>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/hotel-pin.js"></script>
+<script src="js/hotel-owner.js"></script>
+</body>
+</html>

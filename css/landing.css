@@ -204,9 +204,19 @@ body.landing-page {
              transform 220ms var(--ease), box-shadow 220ms;
   animation:slideLeft 380ms var(--ease) both;
 }
-.sl-card:nth-child(1) { animation-delay:80ms; }
-.sl-card:nth-child(2) { animation-delay:160ms; }
-.sl-card:nth-child(3) { animation-delay:240ms; }
+.sl-group-lbl {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--t4);
+  padding: 4px 2px 0;
+  margin-top: 4px;
+}
+.sl-cards .sl-card:nth-of-type(1) { animation-delay:80ms; }
+.sl-cards .sl-card:nth-of-type(2) { animation-delay:140ms; }
+.sl-cards .sl-card:nth-of-type(3) { animation-delay:200ms; }
+.sl-cards .sl-card:nth-of-type(4) { animation-delay:260ms; }
 .sl-card::before {
   content:'';
   position:absolute; inset:0;

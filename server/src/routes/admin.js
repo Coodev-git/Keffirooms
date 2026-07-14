@@ -18,6 +18,21 @@ import {
 } from '../services/adminService.js';
 import { updateListingStatus, listListings } from '../services/listingService.js';
 import { getTrustProfilesForAgents } from '../services/trustScoreService.js';
+import { upload } from '../middleware/upload.js';
+import { uploadHotelImages } from '../services/cloudinaryService.js';
+import {
+  listAllHotelsAdmin,
+  getHotelById,
+  createHotel,
+  updateHotel,
+  createHotelRoom,
+  updateHotelRoom,
+  listHotelBookings,
+  updateHotelBookingStatus,
+  listPendingHotelOwners,
+  setHotelOwnerStatus,
+  BOOKING_STATUSES,
+} from '../services/hotelService.js';
 
 const router = Router();
 
@@ -149,6 +164,202 @@ router.get(
     const stats = await getFeeStats();
     const reviews = await listReviews();
     res.json({ ...stats, reviews });
+  })
+);
+
+/* ── HotelSpace (hotel_*) admin ── */
+
+router.get(
+  '/hotel-owners/pending',
+  asyncHandler(async (req, res) => {
+    res.json({ owners: await listPendingHotelOwners() });
+  })
+);
+
+router.patch(
+  '/hotel-owners/:id/status',
+  param('id').isUUID(),
+  body('status').isIn(['approved', 'denied', 'pending']),
+  validate,
+  asyncHandler(async (req, res) => {
+    const profile = await setHotelOwnerStatus(req.params.id, req.body.status, req.user.id);
+    res.json({ profile });
+  })
+);
+
+router.get(
+  '/hotels',
+  asyncHandler(async (req, res) => {
+    res.json({ hotels: await listAllHotelsAdmin() });
+  })
+);
+
+router.get(
+  '/hotels/:id',
+  param('id').isUUID(),
+  validate,
+  asyncHandler(async (req, res) => {
+    res.json({ hotel: await getHotelById(req.params.id, { admin: true }) });
+  })
+);
+
+router.post(
+  '/hotels',
+  upload.array('photos', 12),
+  body('name').trim().isLength({ min: 2, max: 200 }),
+  body('locationAddress').trim().isLength({ min: 5 }),
+  body('managerPhone').trim().notEmpty(),
+  body('priceRangeMin').isInt({ min: 0 }),
+  body('priceRangeMax').isInt({ min: 0 }),
+  validate,
+  asyncHandler(async (req, res) => {
+    let photos = [];
+    if (req.files?.length) {
+      photos = await uploadHotelImages(req.files);
+    } else if (req.body.photos) {
+      try {
+        photos = typeof req.body.photos === 'string'
+          ? JSON.parse(req.body.photos)
+          : req.body.photos;
+      } catch {
+        photos = [];
+      }
+    }
+    let amenities = [];
+    if (req.body.amenities) {
+      try {
+        amenities = typeof req.body.amenities === 'string'
+          ? JSON.parse(req.body.amenities)
+          : req.body.amenities;
+      } catch {
+        amenities = String(req.body.amenities).split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    const hotel = await createHotel({
+      name: req.body.name,
+      description: req.body.description,
+      locationAddress: req.body.locationAddress,
+      area: req.body.area || null,
+      landmark: req.body.landmark || null,
+      priceRangeMin: parseInt(req.body.priceRangeMin, 10),
+      priceRangeMax: parseInt(req.body.priceRangeMax, 10),
+      rating: req.body.rating !== undefined && req.body.rating !== ''
+        ? parseFloat(req.body.rating)
+        : null,
+      managerPhone: req.body.managerPhone,
+      backupPhone: req.body.backupPhone || null,
+      photos,
+      amenities,
+      isActive: req.body.isActive !== 'false' && req.body.isActive !== false,
+      verifyStatus: 'verified',
+    });
+    res.status(201).json({ hotel });
+  })
+);
+
+router.patch(
+  '/hotels/:id',
+  param('id').isUUID(),
+  upload.array('photos', 12),
+  validate,
+  asyncHandler(async (req, res) => {
+    const patch = { ...req.body };
+    if (req.files?.length) {
+      const uploaded = await uploadHotelImages(req.files);
+      const existing = await getHotelById(req.params.id, { admin: true });
+      patch.photos = [...(existing.photos || []), ...uploaded];
+    } else if (typeof req.body.photos === 'string') {
+      try {
+        patch.photos = JSON.parse(req.body.photos);
+      } catch { /* keep as-is */ }
+    }
+    if (typeof req.body.amenities === 'string') {
+      try {
+        patch.amenities = JSON.parse(req.body.amenities);
+      } catch {
+        patch.amenities = req.body.amenities.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    if (patch.priceRangeMin != null) patch.priceRangeMin = parseInt(patch.priceRangeMin, 10);
+    if (patch.priceRangeMax != null) patch.priceRangeMax = parseInt(patch.priceRangeMax, 10);
+    if (patch.rating === '') patch.rating = null;
+    else if (patch.rating != null) patch.rating = parseFloat(patch.rating);
+    if (patch.isActive === 'true') patch.isActive = true;
+    if (patch.isActive === 'false') patch.isActive = false;
+    const hotel = await updateHotel(req.params.id, patch);
+    res.json({ hotel });
+  })
+);
+
+router.post(
+  '/hotels/:id/rooms',
+  param('id').isUUID(),
+  upload.array('photos', 4),
+  body('roomType').trim().isLength({ min: 2, max: 80 }),
+  body('price').isInt({ min: 1 }),
+  validate,
+  asyncHandler(async (req, res) => {
+    let photos = [];
+    if (req.files?.length) {
+      photos = await uploadHotelImages(req.files);
+    }
+    const room = await createHotelRoom(req.params.id, {
+      roomType: req.body.roomType,
+      price: parseInt(req.body.price, 10),
+      description: req.body.description,
+      isAvailable: req.body.isAvailable !== false && req.body.isAvailable !== 'false',
+      photos,
+    });
+    res.status(201).json({ room });
+  })
+);
+
+router.patch(
+  '/rooms/:id',
+  param('id').isUUID(),
+  upload.array('photos', 4),
+  validate,
+  asyncHandler(async (req, res) => {
+    const patch = { ...req.body };
+    if (patch.price != null) patch.price = parseInt(patch.price, 10);
+    if (patch.isAvailable === 'true') patch.isAvailable = true;
+    if (patch.isAvailable === 'false') patch.isAvailable = false;
+    if (req.files?.length) {
+      const { query } = await import('../db/pool.js');
+      const { rows } = await query('SELECT photos FROM hotel_rooms WHERE id = $1', [req.params.id]);
+      if (!rows[0]) {
+        const { AppError } = await import('../utils/errors.js');
+        throw new AppError('Room not found', 404, 'ROOM_NOT_FOUND');
+      }
+      const uploaded = await uploadHotelImages(req.files);
+      let current = rows[0].photos;
+      if (typeof current === 'string') {
+        try { current = JSON.parse(current); } catch { current = []; }
+      }
+      if (!Array.isArray(current)) current = [];
+      patch.photos = [...current, ...uploaded].slice(0, 4);
+    }
+    const room = await updateHotelRoom(req.params.id, patch);
+    res.json({ room });
+  })
+);
+
+router.get(
+  '/hotel-bookings',
+  asyncHandler(async (req, res) => {
+    const status = req.query.status || undefined;
+    res.json({ bookings: await listHotelBookings({ status }) });
+  })
+);
+
+router.patch(
+  '/hotel-bookings/:id/status',
+  param('id').isUUID(),
+  body('status').isIn(BOOKING_STATUSES),
+  validate,
+  asyncHandler(async (req, res) => {
+    const booking = await updateHotelBookingStatus(req.params.id, req.body.status);
+    res.json({ booking });
   })
 );
 

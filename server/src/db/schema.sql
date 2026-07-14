@@ -297,3 +297,137 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_listings_serial ON listings(serial_number)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_phone VARCHAR(20);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_recovery_phone
   ON users(recovery_phone) WHERE recovery_phone IS NOT NULL;
+
+-- ═══════════════════════════════════════════════════════════
+-- HOTEL / SHORT-STAY MODULE (hotel_* prefix — rename UI label later)
+-- ═══════════════════════════════════════════════════════════
+
+DO $$ BEGIN
+  CREATE TYPE hotel_booking_status AS ENUM (
+    'pending',
+    'payment_confirmed',
+    'hotel_contacted',
+    'confirmed',
+    'expired',
+    'cancelled'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS hotels (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name              VARCHAR(200) NOT NULL,
+  description       TEXT,
+  location_address  TEXT NOT NULL,
+  price_range_min   INTEGER NOT NULL CHECK (price_range_min >= 0),
+  price_range_max   INTEGER NOT NULL CHECK (price_range_max >= 0),
+  rating            DECIMAL(2, 1),
+  manager_phone     VARCHAR(20) NOT NULL,
+  backup_phone      VARCHAR(20),
+  photos            JSONB NOT NULL DEFAULT '[]',
+  amenities         JSONB NOT NULL DEFAULT '[]',
+  is_active         BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT hotels_price_range CHECK (price_range_max >= price_range_min)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hotels_active ON hotels(is_active);
+CREATE INDEX IF NOT EXISTS idx_hotels_created ON hotels(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS hotel_rooms (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  hotel_id      UUID NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
+  room_type     VARCHAR(80) NOT NULL,
+  price         INTEGER NOT NULL CHECK (price > 0),
+  description   TEXT,
+  is_available  BOOLEAN NOT NULL DEFAULT TRUE,
+  photos        JSONB NOT NULL DEFAULT '[]',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE hotel_rooms ADD COLUMN IF NOT EXISTS photos JSONB NOT NULL DEFAULT '[]';
+
+CREATE INDEX IF NOT EXISTS idx_hotel_rooms_hotel ON hotel_rooms(hotel_id);
+CREATE INDEX IF NOT EXISTS idx_hotel_rooms_available ON hotel_rooms(hotel_id, is_available);
+
+CREATE TABLE IF NOT EXISTS hotel_bookings (
+  id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_code            VARCHAR(16) NOT NULL UNIQUE,
+  hotel_id                UUID NOT NULL REFERENCES hotels(id),
+  room_id                 UUID NOT NULL REFERENCES hotel_rooms(id),
+  student_name            VARCHAR(120) NOT NULL,
+  student_phone           VARCHAR(20) NOT NULL,
+  requested_checkin_date  DATE NOT NULL,
+  requested_checkout_date DATE NOT NULL,
+  status                  hotel_booking_status NOT NULL DEFAULT 'pending',
+  created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at              TIMESTAMPTZ NOT NULL,
+  updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT hotel_bookings_dates CHECK (requested_checkout_date > requested_checkin_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hotel_bookings_status ON hotel_bookings(status);
+CREATE INDEX IF NOT EXISTS idx_hotel_bookings_hotel ON hotel_bookings(hotel_id);
+CREATE INDEX IF NOT EXISTS idx_hotel_bookings_expires ON hotel_bookings(expires_at);
+CREATE INDEX IF NOT EXISTS idx_hotel_bookings_code ON hotel_bookings(booking_code);
+
+DROP TRIGGER IF EXISTS tr_hotels_updated ON hotels;
+CREATE TRIGGER tr_hotels_updated BEFORE UPDATE ON hotels
+  FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+DROP TRIGGER IF EXISTS tr_hotel_rooms_updated ON hotel_rooms;
+CREATE TRIGGER tr_hotel_rooms_updated BEFORE UPDATE ON hotel_rooms
+  FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+DROP TRIGGER IF EXISTS tr_hotel_bookings_updated ON hotel_bookings;
+CREATE TRIGGER tr_hotel_bookings_updated BEFORE UPDATE ON hotel_bookings
+  FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+-- Hotel owners (same drill as agents — register, WhatsApp verify, admin approve)
+DO $$ BEGIN
+  ALTER TYPE user_role ADD VALUE 'hotel';
+EXCEPTION WHEN duplicate_object THEN NULL;
+WHEN others THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE hotel_owner_status AS ENUM ('pending', 'approved', 'denied');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE hotel_verify_status AS ENUM ('pending', 'verified', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS hotel_owner_profiles (
+  user_id           UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  status            hotel_owner_status NOT NULL DEFAULT 'pending',
+  hotel_name        VARCHAR(200),
+  verification_notes TEXT,
+  approved_at       TIMESTAMPTZ,
+  approved_by       UUID REFERENCES users(id),
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_hotel_owner_profiles_status ON hotel_owner_profiles(status);
+
+DROP TRIGGER IF EXISTS tr_hotel_owner_profiles_updated ON hotel_owner_profiles;
+CREATE TRIGGER tr_hotel_owner_profiles_updated BEFORE UPDATE ON hotel_owner_profiles
+  FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+-- Extend hotels for owner + public location (exact address stays private)
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES users(id);
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS area VARCHAR(100);
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS landmark VARCHAR(200);
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS verify_status hotel_verify_status NOT NULL DEFAULT 'verified';
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS pin_lat DECIMAL(10, 6);
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS pin_lng DECIMAL(10, 6);
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS pin_acc VARCHAR(20);
+
+CREATE INDEX IF NOT EXISTS idx_hotels_owner ON hotels(owner_id);
+CREATE INDEX IF NOT EXISTS idx_hotels_verify ON hotels(verify_status);
+CREATE INDEX IF NOT EXISTS idx_hotels_pin ON hotels(pin_lat, pin_lng);
+
+-- Owner-submitted hotels start inactive until admin verifies
+UPDATE hotels SET verify_status = 'verified' WHERE verify_status IS NULL;

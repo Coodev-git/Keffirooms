@@ -7,6 +7,7 @@ import {
   loginHandler,
   registerSeekerHandler,
   registerAgentHandler,
+  registerHotelHandler,
   refreshHandler,
   logoutHandler,
   meHandler,
@@ -71,6 +72,28 @@ router.post(
   }),
   validate,
   asyncHandler(registerAgentHandler)
+);
+
+router.post(
+  '/register/hotel',
+  authLimiter,
+  body('email').isEmail().normalizeEmail(),
+  body('password').isLength({ min: 8 }),
+  body('name').trim().isLength({ min: 2, max: 120 }),
+  body('phone').trim().notEmpty(),
+  body('hotelName').trim().isLength({ min: 2, max: 200 }),
+  body('locationAddress').optional({ values: 'falsy' }).trim(),
+  body('area').trim().isLength({ min: 2, max: 100 }),
+  body('landmark').optional({ values: 'falsy' }).trim(),
+  body('description').optional({ values: 'falsy' }).trim(),
+  body('priceRangeMin').isInt({ min: 0 }),
+  body('priceRangeMax').isInt({ min: 0 }),
+  body('pinLat').isFloat({ min: -90, max: 90 }),
+  body('pinLng').isFloat({ min: -180, max: 180 }),
+  body('pinAcc').optional({ values: 'falsy' }).trim(),
+  body('backupPhone').optional({ values: 'falsy' }).trim(),
+  validate,
+  asyncHandler(registerHotelHandler)
 );
 
 router.post('/refresh', authLimiter, asyncHandler(refreshHandler));

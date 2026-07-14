@@ -27,9 +27,13 @@ export function refreshCookieOptions() {
 
 export async function fetchUserWithAgent(userId) {
   const { rows } = await query(
-    `SELECT u.*, ap.status AS agent_status, ap.is_promoted_admin
+    `SELECT u.*,
+            ap.status AS agent_status,
+            ap.is_promoted_admin,
+            hop.status AS hotel_owner_status
      FROM users u
      LEFT JOIN agent_profiles ap ON ap.user_id = u.id
+     LEFT JOIN hotel_owner_profiles hop ON hop.user_id = u.id
      WHERE u.id = $1`,
     [userId]
   );
@@ -123,9 +127,13 @@ export async function loginWithPassword({ identifier, password }) {
   const emailId = trimmed.toLowerCase();
   const normalizedPhone = normalizeNigerianPhone(trimmed);
   const { rows } = await query(
-    `SELECT u.*, ap.status AS agent_status, ap.is_promoted_admin
+    `SELECT u.*,
+            ap.status AS agent_status,
+            ap.is_promoted_admin,
+            hop.status AS hotel_owner_status
      FROM users u
      LEFT JOIN agent_profiles ap ON ap.user_id = u.id
+     LEFT JOIN hotel_owner_profiles hop ON hop.user_id = u.id
      WHERE u.is_active = TRUE AND (
        LOWER(u.email) = $1
        OR ($2::text IS NOT NULL AND (u.phone = $2 OR u.recovery_phone = $2))
@@ -144,6 +152,9 @@ export async function loginWithPassword({ identifier, password }) {
   if (user.role === 'agent' && user.agent_status === 'denied') {
     throw new AppError('Agent access denied by admin', 403, 'AGENT_DENIED');
   }
+  if (user.role === 'hotel' && user.hotel_owner_status === 'denied') {
+    throw new AppError('Hotel access denied by admin', 403, 'HOTEL_DENIED');
+  }
 
   return user;
 }
@@ -152,6 +163,9 @@ export async function loginHandler(req, res) {
   const user = await loginWithPassword(req.body);
   if (user.role === 'agent' && user.agent_status === 'pending') {
     throw new AppError('Awaiting admin approval', 403, 'AGENT_PENDING');
+  }
+  if (user.role === 'hotel' && user.hotel_owner_status === 'pending') {
+    throw new AppError('Awaiting admin approval — we will contact you on WhatsApp', 403, 'HOTEL_PENDING');
   }
   const tokens = await issueTokensForUser(res, user);
   res.json(tokens);
@@ -168,6 +182,113 @@ export async function registerAgentHandler(req, res) {
   const user = await registerAgent(req.body);
   res.status(201).json({
     message: 'Request submitted — awaiting admin approval',
+    user: sanitizeUser(user),
+  });
+}
+
+export async function registerHotel({
+  email,
+  password,
+  name,
+  phone,
+  hotelName,
+  locationAddress,
+  area,
+  landmark,
+  description,
+  priceRangeMin,
+  priceRangeMax,
+  backupPhone,
+  pinLat,
+  pinLng,
+  pinAcc,
+}) {
+  if (!isNigerianWhatsAppPhone(phone)) {
+    throw new AppError(
+      'Register with your active WhatsApp number (e.g. 08012345678).',
+      400,
+      'INVALID_WHATSAPP_PHONE'
+    );
+  }
+  const normalizedPhone = normalizeNigerianPhone(phone);
+  let normalizedBackup = null;
+  if (backupPhone) {
+    if (!isNigerianWhatsAppPhone(backupPhone)) {
+      throw new AppError('Backup phone must be a valid Nigerian WhatsApp number', 400, 'INVALID_PHONE');
+    }
+    normalizedBackup = normalizeNigerianPhone(backupPhone);
+  }
+
+  if (!hotelName?.trim() || !area?.trim()) {
+    throw new AppError('Hotel name and area are required', 400, 'VALIDATION_ERROR');
+  }
+  const lat = Number(pinLat);
+  const lng = Number(pinLng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    throw new AppError('Pin your hotel on the map before submitting', 400, 'PIN_REQUIRED');
+  }
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    throw new AppError('Invalid map pin', 400, 'INVALID_PIN');
+  }
+  const addressLabel = (locationAddress && String(locationAddress).trim())
+    || `Map pin · ${area.trim()}, Keffi (${lat.toFixed(6)}, ${lng.toFixed(6)})`;
+
+  const minP = parseInt(priceRangeMin, 10);
+  const maxP = parseInt(priceRangeMax, 10);
+  if (!Number.isFinite(minP) || !Number.isFinite(maxP) || minP < 0 || maxP < minP) {
+    throw new AppError('Enter a valid nightly price range', 400, 'VALIDATION_ERROR');
+  }
+
+  const existing = await query(
+    `SELECT id FROM users WHERE email = $1 OR phone = $2`,
+    [email.toLowerCase(), normalizedPhone]
+  );
+  if (existing.rows.length) throw new AppError('Email or phone already registered', 409, 'DUPLICATE');
+
+  return withTransaction(async (client) => {
+    const hash = await bcrypt.hash(password, 12);
+    const userRes = await client.query(
+      `INSERT INTO users (email, phone, password_hash, role, name)
+       VALUES ($1, $2, $3, 'hotel', $4)
+       RETURNING *`,
+      [email.toLowerCase(), normalizedPhone, hash, name]
+    );
+    const userId = userRes.rows[0].id;
+    await client.query(
+      `INSERT INTO hotel_owner_profiles (user_id, status, hotel_name)
+       VALUES ($1, 'pending', $2)`,
+      [userId, hotelName.trim()]
+    );
+    await client.query(
+      `INSERT INTO hotels
+        (name, description, location_address, area, landmark, price_range_min, price_range_max,
+         manager_phone, backup_phone, photos, amenities, is_active, owner_id, verify_status,
+         pin_lat, pin_lng, pin_acc)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'[]'::jsonb,'[]'::jsonb,FALSE,$10,'pending',$11,$12,$13)`,
+      [
+        hotelName.trim(),
+        description || null,
+        addressLabel,
+        area.trim(),
+        landmark?.trim() || null,
+        minP,
+        maxP,
+        normalizedPhone,
+        normalizedBackup,
+        userId,
+        lat,
+        lng,
+        pinAcc ? String(pinAcc).slice(0, 20) : null,
+      ]
+    );
+    return fetchUserWithAgent(userId);
+  });
+}
+
+export async function registerHotelHandler(req, res) {
+  const user = await registerHotel(req.body);
+  res.status(201).json({
+    message: 'Hotel registration submitted — await WhatsApp verification and admin approval',
     user: sanitizeUser(user),
   });
 }

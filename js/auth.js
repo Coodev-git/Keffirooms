@@ -323,6 +323,82 @@ async function agentRegister() {
   }
 }
 
+async function hotelLogin() {
+  const identifier = document.getElementById('ht-email')?.value.trim();
+  const password = document.getElementById('ht-password')?.value;
+  if (!identifier || !password) { showToast('Enter credentials'); return; }
+  try {
+    const data = await API.auth.login(identifier, password);
+    setAuthFromResponse(data);
+    const u = data.user;
+    if (u.role !== 'hotel' && u.role !== 'admin') {
+      showToast('Not a hotel owner account');
+      clearSession();
+      return;
+    }
+    if (u.role === 'hotel' && u.hotelOwnerStatus === 'pending') {
+      showToast('Awaiting admin approval — check WhatsApp');
+      clearSession();
+      return;
+    }
+    if (u.role === 'hotel' && u.hotelOwnerStatus === 'denied') {
+      showToast('Access denied by admin');
+      clearSession();
+      return;
+    }
+    if (u.role === 'admin') goPage('admin.html');
+    else goPage('hotel-owner.html');
+  } catch (e) {
+    showToast(e.message || 'Login failed');
+  }
+}
+
+async function hotelRegister() {
+  if (!requireTermsAgreed('ht-terms')) return;
+  const pinLat = parseFloat(document.getElementById('ht-rg-pin-lat')?.value);
+  const pinLng = parseFloat(document.getElementById('ht-rg-pin-lng')?.value);
+  const body = {
+    name: document.getElementById('ht-rg-name')?.value.trim(),
+    email: document.getElementById('ht-rg-email')?.value.trim(),
+    phone: document.getElementById('ht-rg-phone')?.value.trim(),
+    password: document.getElementById('ht-rg-password')?.value,
+    hotelName: document.getElementById('ht-rg-hotel')?.value.trim(),
+    area: document.getElementById('ht-rg-area')?.value.trim(),
+    landmark: document.getElementById('ht-rg-landmark')?.value.trim(),
+    locationAddress: document.getElementById('ht-rg-address')?.value.trim(),
+    description: document.getElementById('ht-rg-desc')?.value.trim(),
+    priceRangeMin: parseInt(document.getElementById('ht-rg-min')?.value, 10),
+    priceRangeMax: parseInt(document.getElementById('ht-rg-max')?.value, 10),
+    backupPhone: document.getElementById('ht-rg-backup')?.value.trim() || undefined,
+    pinLat,
+    pinLng,
+    pinAcc: document.getElementById('ht-rg-pin-acc')?.value.trim() || undefined,
+  };
+  if (!body.name || !body.email || !body.phone || !body.password || !body.hotelName || !body.area) {
+    showToast('Fill all required fields');
+    return;
+  }
+  if (!Number.isFinite(pinLat) || !Number.isFinite(pinLng)) {
+    showToast('Pin your hotel on the map first');
+    return;
+  }
+  if (!isNigerianWhatsAppPhone(body.phone)) {
+    showToast('Use your active WhatsApp number (e.g. 08012345678)');
+    return;
+  }
+  if (!Number.isFinite(body.priceRangeMin) || !Number.isFinite(body.priceRangeMax)) {
+    showToast('Enter nightly price range');
+    return;
+  }
+  try {
+    await API.auth.registerHotel(body);
+    showToast('Submitted — we will WhatsApp you before approval');
+    setTimeout(() => goPage('index.html'), 1800);
+  } catch (e) {
+    showToast(e.message || 'Registration failed');
+  }
+}
+
 // ── PIN INPUT HELPERS ──
 function pinNext(input, index, rowId) {
   const val = input.value.replace(/\D/g, '');
@@ -478,6 +554,7 @@ async function requireAuthAsync(expectedRole) {
   if (!s?.loggedIn) {
     const dest = expectedRole === 'admin' ? 'auth-admin.html'
       : expectedRole === 'agent' ? 'auth-agent.html'
+      : expectedRole === 'hotel' ? 'auth-hotel.html'
       : 'auth-seeker.html';
     goPage(dest);
     return null;
@@ -488,6 +565,10 @@ async function requireAuthAsync(expectedRole) {
     return null;
   }
   if (expectedRole === 'agent' && s.role !== 'agent' && s.role !== 'admin') {
+    goPage('index.html');
+    return null;
+  }
+  if (expectedRole === 'hotel' && s.role !== 'hotel' && s.role !== 'admin') {
     goPage('index.html');
     return null;
   }

@@ -40,6 +40,17 @@ export function requireAgentApproved(req, res, next) {
   next();
 }
 
+export function requireHotelOwnerApproved(req, res, next) {
+  if (req.user.role === 'admin') return next();
+  if (req.user.role !== 'hotel') {
+    return next(new AppError('Hotel owner access required', 403, 'FORBIDDEN'));
+  }
+  if (req.user.hotelOwnerStatus !== 'approved') {
+    return next(new AppError('Hotel account not yet approved', 403, 'HOTEL_NOT_APPROVED'));
+  }
+  next();
+}
+
 /** Master admin or agent promoted to admin */
 export function requireAdminAccess(req, res, next) {
   if (!req.user) {

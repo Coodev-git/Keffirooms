@@ -46,30 +46,28 @@ function uploadBuffer(buffer, folder) {
   });
 }
 
-/** Dev-only fallback when Cloudinary secret is not set locally */
-async function uploadListingImagesLocalDev(files) {
-  const dir = path.join(config.upload.dir, 'listings');
+async function uploadImagesLocalDev(files, localSubdir) {
+  const dir = path.join(config.upload.dir, localSubdir);
   fs.mkdirSync(dir, { recursive: true });
   const urls = [];
   for (const file of files) {
     const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
     const name = `${Date.now()}-${crypto.randomBytes(16).toString('hex')}${ext}`;
     fs.writeFileSync(path.join(dir, name), file.buffer);
-    urls.push(`/uploads/listings/${name}`);
+    urls.push(`/uploads/${localSubdir}/${name}`);
   }
   return urls;
 }
 
-/** Upload listing photos; production uses Cloudinary secure_url only */
-export async function uploadListingImages(files) {
+async function uploadImagesToFolder(files, folder, localSubdir) {
   if (!files?.length) {
     throw new AppError('No images to upload', 400, 'PHOTOS_REQUIRED');
   }
 
   if (!isCloudinaryConfigured()) {
     if (!config.isProd) {
-      console.warn('[dev] Cloudinary not configured — saving photos to server/uploads');
-      return uploadListingImagesLocalDev(files);
+      console.warn(`[dev] Cloudinary not configured — saving photos to server/uploads/${localSubdir}`);
+      return uploadImagesLocalDev(files, localSubdir);
     }
     ensureConfigured();
   }
@@ -78,7 +76,7 @@ export async function uploadListingImages(files) {
   const results = [];
   for (const file of files) {
     try {
-      const secureUrl = await uploadBuffer(file.buffer, config.cloudinary.listingFolder);
+      const secureUrl = await uploadBuffer(file.buffer, folder);
       results.push(secureUrl);
     } catch (err) {
       console.error('Cloudinary upload failed:', err.message);
@@ -90,4 +88,15 @@ export async function uploadListingImages(files) {
     }
   }
   return results;
+}
+
+/** Upload listing photos; production uses Cloudinary secure_url only */
+export async function uploadListingImages(files) {
+  return uploadImagesToFolder(files, config.cloudinary.listingFolder, 'listings');
+}
+
+/** Upload hotel photos to Cloudinary (separate folder from property listings) */
+export async function uploadHotelImages(files) {
+  const folder = process.env.CLOUDINARY_HOTEL_FOLDER || 'keffirooms/hotels';
+  return uploadImagesToFolder(files, folder, 'hotels');
 }

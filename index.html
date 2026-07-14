@@ -648,39 +648,56 @@
                 </div>
             </div>
 
-            <!-- ROLE CARDS -->
+            <!-- ROLE CARDS: find side vs list side -->
             <div class="sl-cards">
+                <div class="sl-group-lbl">Find houses / hotels</div>
                 <button class="sl-card teal" onclick="handleRoleClick('seeker', event)">
                     <div class="sl-card-icon teal">
                         <span class="material-symbols-rounded ms" style="font-size:1.2rem;">travel_explore</span>
                     </div>
                     <div class="sl-card-text">
-                        <div class="sl-card-title">I am a Student Seeker</div>
-                        <div class="sl-card-sub">Browse verified rooms, contact agents securely</div>
+                        <div class="sl-card-title">I’m looking for a place</div>
+                        <div class="sl-card-sub">Semester lodges or short-stay hotels near NSUK</div>
                     </div>
                     <div class="sl-card-arrow">
                         <span class="material-symbols-rounded ms" style="font-size:1.1rem;">chevron_right</span>
                     </div>
                 </button>
+
+                <div class="sl-group-lbl">List your property</div>
                 <button class="sl-card gold" onclick="handleRoleClick('agent', event)">
                     <div class="sl-card-icon gold">
                         <span class="material-symbols-rounded ms" style="font-size:1.2rem;">business_center</span>
                     </div>
                     <div class="sl-card-text">
-                        <div class="sl-card-title">I am a Property Agent</div>
-                        <div class="sl-card-sub">List apartments, manage leads and bookings</div>
+                        <div class="sl-card-title">I’m a property agent</div>
+                        <div class="sl-card-sub">List lodges and manage student leads</div>
                     </div>
                     <div class="sl-card-arrow">
                         <span class="material-symbols-rounded ms" style="font-size:1.1rem;">chevron_right</span>
                     </div>
                 </button>
+                <button class="sl-card teal" onclick="goPage('auth-hotel.html#register')" type="button">
+                    <div class="sl-card-icon teal">
+                        <span class="material-symbols-rounded ms" style="font-size:1.2rem;">hotel</span>
+                    </div>
+                    <div class="sl-card-text">
+                        <div class="sl-card-title">I own a hotel / short stay</div>
+                        <div class="sl-card-sub">Pin location on map, WhatsApp verify, then go live</div>
+                    </div>
+                    <div class="sl-card-arrow">
+                        <span class="material-symbols-rounded ms" style="font-size:1.1rem;">chevron_right</span>
+                    </div>
+                </button>
+
+                <div class="sl-group-lbl">Admin</div>
                 <button class="sl-card violet" onclick="handleRoleClick('admin', event)">
                     <div class="sl-card-icon violet">
                         <span class="material-symbols-rounded ms" style="font-size:1.2rem;">admin_panel_settings</span>
                     </div>
                     <div class="sl-card-text">
-                        <div class="sl-card-title">I am an NSUK Admin</div>
-                        <div class="sl-card-sub">Verify listings, manage agents and trust badges</div>
+                        <div class="sl-card-title">I’m an admin</div>
+                        <div class="sl-card-sub">Verify listings, agents, and hotels</div>
                     </div>
                     <div class="sl-card-arrow">
                         <span class="material-symbols-rounded ms" style="font-size:1.1rem;">chevron_right</span>
@@ -784,7 +801,7 @@
                     <div class="step-num g">4</div>
                     <div>
                         <div class="step-t">Confirm &amp; Complete</div>
-                        <div class="step-s">After visiting the property, both parties can confirm with KeffiRooms that the connection went well. Coordination fees apply only after a successful match — never pay an agent directly before our team confirms.</div>
+                        <div class="step-s">After visiting, confirm with KeffiRooms that everything went well. Fee details are shared on WhatsApp only after a successful match — never pay an agent before our team confirms.</div>
                     </div>
                 </div>
             </div>
@@ -847,9 +864,15 @@
 
                 <div class="terms-divider"></div>
 
-                <div class="terms-fee-box">
-                    <strong>Coordination Fee Notice</strong>
-                    KeffiRooms charges a coordination fee only after a successful connection is confirmed: <strong>₦2,000 from the seeker</strong> and <strong>₦5,000 from the agent</strong> (₦7,000 total per connection). This covers trust verification, identity confirmation, and secure WhatsApp coordination. Fees are never collected before both parties confirm the viewing was successful.
+                <div class="terms-section">
+                    <div class="terms-section-title">
+                        <span class="material-symbols-rounded ms">chat</span>
+                        Fees &amp; payments
+                    </div>
+                    <div class="terms-item">
+                        <span class="material-symbols-rounded ms">forum</span>
+                        Any coordination fee is explained personally on WhatsApp after a successful connection — never pay anyone before KeffiRooms confirms.
+                    </div>
                 </div>
 
                 <div class="terms-section">
@@ -1111,7 +1134,7 @@
                     }
                 }
                 if (role === 'seeker') {
-                    goPage('auth-seeker.html');
+                    seekerGuest();
                 }
                 if (role === 'agent') {
                     goPage('auth-agent.html');

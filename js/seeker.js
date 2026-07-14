@@ -1,14 +1,17 @@
 /* ═══════════════════════════════════════
    KEFFIROOMS — SEEKER.JS
-   Seeker portal — API-backed
+   Unified student hub: Lodge + Short stay
 ═══════════════════════════════════════ */
 
 let seekerState = {
+  mode: 'lodge', // lodge | stay
   area: 'all',
+  stayArea: 'all',
   vOnly: false,
   maxPrice: 500000,
   loved: new Set(),
   listings: [],
+  hotels: [],
   currentListing: null,
   conversationId: null,
 };
@@ -19,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await bootstrapAuth();
   const session = getSession();
   const chip = document.getElementById('mode-chip-label');
-  if (chip) chip.textContent = session?.loggedIn ? 'Seeker Mode' : 'Guest Mode';
+  if (chip) chip.textContent = session?.loggedIn ? 'Signed in' : 'Browsing';
 
   if (session?.loggedIn) {
     try {
@@ -28,48 +31,77 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch { /* guest */ }
   }
 
-  await renderListings();
+  const params = new URLSearchParams(location.search);
+  const modeParam = params.get('mode');
+  if (modeParam === 'stay' || modeParam === 'lodge') {
+    const btn = document.getElementById(modeParam === 'stay' ? 'mode-stay' : 'mode-lodge');
+    setStudentMode(modeParam, btn);
+  } else {
+    await renderHomeFeed();
+  }
   renderProfile();
-  const vTgl = document.getElementById('v-toggle');
-  if (vTgl) vTgl.className = seekerState.vOnly ? 'tgl on' : 'tgl';
 });
+
+function setStudentMode(mode, el) {
+  seekerState.mode = mode === 'stay' ? 'stay' : 'lodge';
+  document.querySelectorAll('.sk-mode').forEach((b) => b.classList.remove('on'));
+  if (el) el.classList.add('on');
+  else {
+    const fallback = document.getElementById(seekerState.mode === 'stay' ? 'mode-stay' : 'mode-lodge');
+    if (fallback) fallback.classList.add('on');
+  }
+
+  const lodgeFilters = document.getElementById('lodge-filters');
+  const stayFilters = document.getElementById('stay-filters');
+  if (lodgeFilters) lodgeFilters.style.display = seekerState.mode === 'lodge' ? 'block' : 'none';
+  if (stayFilters) stayFilters.style.display = seekerState.mode === 'stay' ? 'block' : 'none';
+
+  const url = new URL(location.href);
+  url.searchParams.set('mode', seekerState.mode);
+  history.replaceState({}, '', url);
+
+  renderHomeFeed();
+}
+
+async function renderHomeFeed() {
+  if (seekerState.mode === 'stay') return renderStayFeed({ refresh: true });
+  return renderListings();
+}
 
 function setArea(area, el) {
   seekerState.area = area;
-  document.querySelectorAll('.area-row').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('#area-list .sk-chip').forEach((b) => b.classList.remove('on'));
   el.classList.add('on');
   renderListings();
 }
 
-function toggleVerified() {
+function setMaxPrice(price, el) {
+  seekerState.maxPrice = price;
+  document.querySelectorAll('#price-chips .sk-chip[data-price]').forEach((b) => b.classList.remove('on'));
+  el.classList.add('on');
+  renderListings();
+}
+
+function toggleVerifiedChip(el) {
   seekerState.vOnly = !seekerState.vOnly;
-  const tgl = document.getElementById('v-toggle');
-  if (tgl) tgl.className = seekerState.vOnly ? 'tgl on' : 'tgl';
-  showToast(seekerState.vOnly ? 'Showing verified listings only' : 'Showing all listings — green = verified, red = not verified');
+  el.classList.toggle('on', seekerState.vOnly);
+  showToast(seekerState.vOnly ? 'Showing verified lodges only' : 'Showing all lodges');
   renderListings();
 }
 
-function updatePrice(el) {
-  const v = parseInt(el.value, 10);
-  seekerState.maxPrice = v;
-  const pct = ((v - 80000) / (500000 - 80000) * 100).toFixed(1);
-  el.style.setProperty('--pct', pct + '%');
-  const lbl = document.getElementById('price-val');
-  if (lbl) lbl.textContent = 'N' + fmtN(v);
-  renderListings();
-}
-
+/* legacy stubs if old markup briefly present */
+function toggleVerified() { toggleVerifiedChip(document.getElementById('v-chip')); }
+function updatePrice() {}
 function resetFilters() {
   seekerState.area = 'all';
   seekerState.vOnly = false;
   seekerState.maxPrice = 500000;
-  document.querySelectorAll('.area-row').forEach((b, i) => b.classList.toggle('on', i === 0));
-  const tgl = document.getElementById('v-toggle');
-  if (tgl) tgl.className = 'tgl';
-  const ps = document.getElementById('price-slider');
-  if (ps) { ps.value = 500000; ps.style.setProperty('--pct', '100%'); }
-  const pv = document.getElementById('price-val');
-  if (pv) pv.textContent = 'N500,000';
+  document.querySelectorAll('#area-list .sk-chip').forEach((b, i) => b.classList.toggle('on', i === 0));
+  document.querySelectorAll('#price-chips .sk-chip[data-price]').forEach((b) => {
+    b.classList.toggle('on', b.getAttribute('data-price') === '500000');
+  });
+  const vc = document.getElementById('v-chip');
+  if (vc) vc.classList.remove('on');
   const aq = document.getElementById('amenity-q');
   if (aq) aq.value = '';
   renderListings();
@@ -92,7 +124,7 @@ async function renderListings() {
 
   const items = seekerState.listings;
   const cnt = document.getElementById('list-count');
-  if (cnt) cnt.innerHTML = `Showing <strong>${items.length}</strong> Room${items.length !== 1 ? 's' : ''}`;
+  if (cnt) cnt.innerHTML = `<strong>${items.length}</strong> lodge${items.length !== 1 ? 's' : ''} near NSUK`;
 
   const container = document.getElementById('listings-cont');
   if (!container) return;
@@ -101,12 +133,140 @@ async function renderListings() {
     container.innerHTML = `
       <div class="empty">
         <span class="material-symbols-rounded" style="font-size:3rem;color:var(--t4);">search_off</span>
-        <p>No rooms found.<br>Try different filters.</p>
+        <p>No lodges match that.<br>Try another area or budget.</p>
       </div>`;
     return;
   }
 
   container.innerHTML = items.map((l, i) => renderSeekerListingCard(l, i)).join('');
+}
+
+function setStayArea(area, el) {
+  seekerState.stayArea = area || 'all';
+  document.querySelectorAll('#stay-area-list .sk-chip').forEach((b) => b.classList.remove('on'));
+  if (el) el.classList.add('on');
+  renderStayFeed();
+}
+
+function stayDateQuery() {
+  const cin = document.getElementById('stay-checkin')?.value || '';
+  const cout = document.getElementById('stay-checkout')?.value || '';
+  const qs = new URLSearchParams();
+  if (cin) qs.set('checkin', cin);
+  if (cout) qs.set('checkout', cout);
+  const s = qs.toString();
+  return s ? `&${s}` : '';
+}
+
+function findStayHotels() {
+  renderStayFeed();
+  document.getElementById('listings-cont')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function openStayHotel(id) {
+  goPage(`hotel.html?id=${id}${stayDateQuery()}`);
+}
+
+function initStayDateDefaults() {
+  const cin = document.getElementById('stay-checkin');
+  const cout = document.getElementById('stay-checkout');
+  if (!cin || !cout) return;
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const iso = (d) => d.toISOString().slice(0, 10);
+  cin.min = iso(today);
+  cout.min = iso(tomorrow);
+  if (!cin.value) cin.value = iso(today);
+  if (!cout.value) cout.value = iso(tomorrow);
+  cin.addEventListener('change', () => {
+    const next = new Date(`${cin.value}T12:00:00`);
+    next.setDate(next.getDate() + 1);
+    cout.min = iso(next);
+    if (cout.value && cout.value <= cin.value) cout.value = iso(next);
+  });
+}
+
+async function renderStayFeed({ refresh = false } = {}) {
+  const cnt = document.getElementById('list-count');
+  const container = document.getElementById('listings-cont');
+  if (!container) return;
+  initStayDateDefaults();
+  if (refresh || !seekerState.hotels.length) {
+    if (cnt) cnt.innerHTML = `Loading hotels…`;
+    try {
+      const { hotels } = await API.hotels.list();
+      seekerState.hotels = hotels || [];
+    } catch (e) {
+      seekerState.hotels = [];
+      const msg = e?.message || 'Failed to load hotels';
+      if (cnt) cnt.innerHTML = escapeHtml(msg);
+      container.innerHTML = `<div class="empty">
+        <span class="material-symbols-rounded" style="font-size:3rem;color:var(--t4);">cloud_off</span>
+        <p>${escapeHtml(msg)}<br>If you see “route not found”, the latest hotel update still needs to deploy.</p>
+      </div>`;
+      return;
+    }
+  }
+
+  const q = (document.getElementById('stay-q')?.value || '').trim().toLowerCase();
+  let items = seekerState.hotels.slice();
+  if (seekerState.stayArea && seekerState.stayArea !== 'all') {
+    const area = seekerState.stayArea.toLowerCase();
+    items = items.filter((h) => String(h.area || '').toLowerCase().includes(area));
+  }
+  if (q) {
+    items = items.filter((h) => {
+      const blob = [h.name, h.area, h.landmark, h.description].join(' ').toLowerCase();
+      return blob.includes(q);
+    });
+  }
+
+  if (cnt) {
+    cnt.innerHTML = `<strong>${items.length}</strong> hotel${items.length !== 1 ? 's' : ''} in Keffi`;
+  }
+
+  if (!items.length) {
+    container.innerHTML = `
+      <div class="empty">
+        <span class="material-symbols-rounded" style="font-size:3rem;color:var(--t4);">hotel</span>
+        <p>${seekerState.hotels.length ? 'No hotels match this search.' : 'No hotels listed yet.'}<br>
+        ${seekerState.hotels.length ? 'Try another area or clear the search.' : 'Check back soon, or browse lodges.'}</p>
+        <button type="button" class="btn-gate" style="margin-top:12px;" onclick="setStudentMode('lodge', document.getElementById('mode-lodge'))">Browse lodges</button>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = items.map((h, i) => {
+    const cover = h.photos?.[0] || h.proofPhotos?.[0] || h.rooms?.[0]?.photos?.[0];
+    const img = cover
+      ? `<img src="${escapeHtml(cover)}" alt="${escapeHtml(h.name)}" loading="lazy">`
+      : `<div class="lcard-img-ph"><span class="material-symbols-rounded" style="font-size:2.5rem;">hotel</span><span>Photo coming soon</span></div>`;
+    const rating = h.rating != null
+      ? `<span class="sk-stay-rating"><span class="material-symbols-rounded">star</span>${Number(h.rating).toFixed(1)}</span>`
+      : '<span class="sk-stay-rating muted">New</span>';
+    const loc = [h.area, h.landmark].filter(Boolean).join(', ') || 'Keffi, Nasarawa';
+    const rooms = h.roomCount || (h.rooms || []).length;
+    return `<article class="hng-card" onclick="openStayHotel('${h.id}')" style="animation-delay:${i * 40}ms">
+      <div class="hng-card-img">${img}</div>
+      <div class="hng-card-body">
+        <div class="hng-card-top">
+          <h3 class="hng-card-name">${escapeHtml(h.name)}</h3>
+          ${rating}
+        </div>
+        <div class="hng-card-loc">
+          <span class="material-symbols-rounded">location_on</span>
+          ${escapeHtml(loc)}
+        </div>
+        <p class="hng-card-desc">${escapeHtml(String(h.description || 'Short stay near NSUK').slice(0, 80))}${(h.description || '').length > 80 ? '…' : ''}
+          ${rooms ? ` · ${rooms} room type${rooms === 1 ? '' : 's'}` : ''}</p>
+        <div class="hng-card-foot">
+          <div class="hng-price">from <strong>₦${fmtN(h.priceRangeMin)}</strong><span>/night</span></div>
+          <span class="hng-cta">Open shop</span>
+        </div>
+      </div>
+    </article>`;
+  }).join('');
 }
 
 function renderSeekerListingCard(l, i) {
@@ -131,7 +291,7 @@ function renderSeekerListingCard(l, i) {
           </div>
         </div>
         <div class="price-overlay">
-          <div class="price-tag-dark">N${fmtN(l.price)}<span>/yr</span></div>
+          <div class="price-tag-dark">₦${fmtN(l.price)}<span>/yr</span></div>
         </div>
       </div>
       <div class="lcard-body">
@@ -162,7 +322,7 @@ function renderSeekerListingCard(l, i) {
 async function toggleLove(id, btn) {
   const session = getSession();
   if (!session?.loggedIn) {
-    showToast('Sign in to save listings');
+    showToast('Sign in to save lodges');
     goPage('auth-seeker.html');
     return;
   }
@@ -177,20 +337,23 @@ async function toggleLove(id, btn) {
       btn.classList.remove('loved');
       btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:1rem;">favorite_border</span>`;
     }
-    if (document.getElementById('sk-panel-saved')?.style.display !== 'none') {
-      renderSavedListings();
-    }
-    if (document.getElementById('sk-panel-profile')?.style.display !== 'none') {
-      renderProfile();
-    }
+    if (document.getElementById('sk-panel-saved')?.style.display !== 'none') renderSavedListings();
   } catch (e) {
     showToast(e.message || 'Could not update favorite');
   }
 }
 
-function openDetail(id) {
-  const l = seekerState.listings.find(x => x.id === id);
-  if (!l) return;
+async function openDetail(id) {
+  let l = seekerState.listings.find((x) => x.id === id);
+  if (!l) {
+    try {
+      const data = await API.listings.get(id);
+      l = data.listing;
+    } catch {
+      showToast('Listing not found');
+      return;
+    }
+  }
   seekerState.currentListing = l;
 
   const dsImg = document.getElementById('ds-img');
@@ -201,7 +364,7 @@ function openDetail(id) {
           detail: true,
           alt: l.title,
           overlayHtml: `<div class="ds-price-row">
-            <div class="ds-price">N${fmtN(l.price)}/year</div>
+            <div class="ds-price">₦${fmtN(l.price)}/year</div>
             ${listingStatusBadgeHtml(l, { overlay: true })}
           </div>`,
         })}
@@ -230,7 +393,9 @@ function openDetail(id) {
   }
 
   const dsLoc = document.getElementById('ds-loc');
-  if (dsLoc) dsLoc.innerHTML = `<span class="material-symbols-rounded" style="font-size:.9rem;">location_on</span>${escapeHtml(l.area)}${l.distance ? ' • ' + escapeHtml(l.distance) : ''}${l.landmark ? ' — ' + escapeHtml(l.landmark) : ''}`;
+  if (dsLoc) {
+    dsLoc.innerHTML = `<span class="material-symbols-rounded" style="font-size:.9rem;">location_on</span>${escapeHtml(l.area)}${l.distance ? ' • ' + escapeHtml(l.distance) : ''}${l.landmark ? ' — ' + escapeHtml(l.landmark) : ''}`;
+  }
   const dsDesc = document.getElementById('ds-desc');
   if (dsDesc) dsDesc.textContent = l.description || 'No description provided.';
   const dsMapLbl = document.getElementById('ds-map-lbl');
@@ -240,7 +405,7 @@ function openDetail(id) {
   if (dsStale) {
     const ts = l.createdAt || l.created_at;
     dsStale.innerHTML = isStale(ts)
-      ? `<div class="stale-warn"><span class="material-symbols-rounded" style="font-size:.85rem;">warning</span>Posted 60+ days ago. Confirm availability with agent before visiting.</div>`
+      ? `<div class="stale-warn"><span class="material-symbols-rounded" style="font-size:.85rem;">warning</span>Posted 60+ days ago. Confirm availability before visiting.</div>`
       : '';
   }
 
@@ -253,7 +418,7 @@ function openDetail(id) {
             KeffiRooms Verified
           </div>
           <div class="te-body">
-            This listing was reviewed and approved by KeffiRooms admin. Contact our coordinator to arrange a viewing.
+            Reviewed by our team. Continue on WhatsApp and we’ll connect you safely.
           </div>
         </div>`
       : `<div class="trust-env">
@@ -262,7 +427,7 @@ function openDetail(id) {
             Pending Verification
           </div>
           <div class="te-body">
-            Admin is still reviewing this listing. You can inquire through KeffiRooms and we will confirm availability with the agent.
+            Still under review — you can inquire and we’ll confirm availability with the agent.
           </div>
         </div>`;
   }
@@ -270,7 +435,7 @@ function openDetail(id) {
   const dsAmenities = document.getElementById('ds-amenities');
   if (dsAmenities) {
     dsAmenities.innerHTML = l.amenities && l.amenities.length
-      ? l.amenities.map(a => `
+      ? l.amenities.map((a) => `
           <div class="amenity-item">
             <span class="material-symbols-rounded" style="font-size:1rem;color:var(--em);">check_circle</span>
             ${escapeHtml(a)}
@@ -291,11 +456,11 @@ function openDetail(id) {
             <p>This listing is not available for inquiries.</p>
           </div>
         </div>`;
-    } else if (session?.loggedIn) {
+    } else {
       const pendingNote = l.status !== 'verified'
         ? `<div class="pending-inquiry-note">
             <span class="material-symbols-rounded">info</span>
-            Not verified yet — you can still inquire. KeffiRooms will confirm availability with the agent.
+            Not verified yet — you can still inquire. We’ll confirm with the agent.
           </div>`
         : '';
       dsContact.innerHTML = `
@@ -304,29 +469,22 @@ function openDetail(id) {
           <div class="cb-top">
             <div class="cb-av">${(l.agentName || 'A').charAt(0).toUpperCase()}</div>
             <div class="cb-info">
-              <div class="cb-name">${escapeHtml(l.agentName || 'Agent')}</div>
-              <div class="cb-role">Via KeffiRooms coordinator</div>
+              <div class="cb-name">${escapeHtml(l.agentName || 'Listed agent')}</div>
+              <div class="cb-role">Via KeffiRooms WhatsApp</div>
             </div>
           </div>
           <div class="cb-btns">
             <button class="btn-contact-wa" onclick="contactViaWhatsApp()">
               <span class="material-symbols-rounded" style="font-size:1rem;">chat</span>
-              Send Inquiry via WhatsApp
+              Continue on WhatsApp
             </button>
-            <button class="btn-call-sm" onclick="callAgent()">
+            <button class="btn-call-sm" onclick="callAgent()" title="Call coordinator">
               <span class="material-symbols-rounded" style="font-size:1rem;">call</span>
             </button>
           </div>
-        </div>`;
-    } else {
-      dsContact.innerHTML = `
-        <div class="login-gate">
-          <div class="gate-icon">
-            <span class="material-symbols-rounded" style="font-size:1.5rem;color:var(--teal-l);">lock</span>
-          </div>
-          <div class="gate-title">Sign in to Contact Agent</div>
-          <div class="gate-sub">Create a free account to unlock agent contacts and save listings you love.</div>
-          <a href="auth-seeker.html" class="btn-gate">Sign In — It's Free</a>
+          ${!session?.loggedIn
+            ? `<div class="guest-soft-hint">No account needed. <a href="auth-seeker.html">Sign in</a> only to save lodges.</div>`
+            : ''}
         </div>`;
     }
   }
@@ -348,15 +506,21 @@ async function contactViaWhatsApp() {
     return;
   }
   const session = getSession();
-  if (!session?.loggedIn) {
-    goPage('auth-seeker.html');
-    return;
+
+  if (session?.loggedIn) {
+    try {
+      const inq = await API.social.createInquiry({ listingId: l.id });
+      seekerState.conversationId = inq.conversationId;
+    } catch { /* still open WhatsApp */ }
   }
 
-  try {
-    const inq = await API.social.createInquiry({ listingId: l.id });
-    seekerState.conversationId = inq.conversationId;
-  } catch { /* continue to chat page */ }
+  const guestName = session?.name && session.loggedIn ? session.name : 'Student';
+  const msg = listingSeekerInquiryMessage(l, { name: guestName, phone: session?.phone || '' });
+  const waUrl = keffiRoomsWhatsAppUrl(msg);
+  if (!waUrl) {
+    showToast('WhatsApp is not configured');
+    return;
+  }
 
   sessionStorage.setItem('kr6_chat_listing', JSON.stringify(sanitizeListingForSeeker(l)));
   if (seekerState.conversationId) {
@@ -365,7 +529,7 @@ async function contactViaWhatsApp() {
 
   const ov = document.getElementById('detail-overlay');
   if (ov) ov.classList.remove('open');
-  goPage('chat.html');
+  window.open(waUrl, '_blank', 'noopener');
 }
 
 function callAgent() {
@@ -381,126 +545,100 @@ function openMap() {
 
 function reportListing() {
   const l = seekerState.currentListing;
-  const msg = encodeURIComponent(`Report on KeffiRooms: ${formatListingTag(l?.serialNumber) || ''} "${l ? l.title : ''}". Reason: `);
+  if (!l) return;
+  const msg = encodeURIComponent(`Report listing ${formatListingTag(l.serialNumber) || l.id}: ${l.title}`);
   window.open(`https://wa.me/${ADMIN_WA}?text=${msg}`, '_blank');
 }
 
 function skTab(tab, el) {
-  document.querySelectorAll('.bn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.bn').forEach((b) => b.classList.remove('on'));
   el.classList.add('on');
-
-  const panels = { home: 'sk-panel-home', saved: 'sk-panel-saved', profile: 'sk-panel-profile' };
-  Object.values(panels).forEach(id => {
-    const p = document.getElementById(id);
-    if (p) p.style.display = 'none';
-  });
-  const active = document.getElementById(panels[tab]);
-  if (active) active.style.display = 'block';
-
+  document.getElementById('sk-panel-home').style.display = tab === 'home' ? 'block' : 'none';
+  document.getElementById('sk-panel-saved').style.display = tab === 'saved' ? 'block' : 'none';
+  document.getElementById('sk-panel-profile').style.display = tab === 'profile' ? 'block' : 'none';
   if (tab === 'saved') renderSavedListings();
   if (tab === 'profile') renderProfile();
-  if (tab === 'home') window.scrollTo(0, 0);
+  if (tab === 'home') renderHomeFeed();
 }
 
 function renderSavedListings() {
   const container = document.getElementById('saved-cont');
   if (!container) return;
   const session = getSession();
-
   if (!session?.loggedIn) {
     container.innerHTML = `
-      <div class="empty" style="padding:30px 0;">
-        <span class="material-symbols-rounded" style="font-size:3rem;color:var(--t4);">lock</span>
-        <p>Sign in to save and view your favourite listings.</p>
-        <button class="btn-profile teal" style="max-width:260px;margin:14px auto 0;" onclick="goPage('auth-seeker.html')">
-          Sign In — It's Free
-        </button>
+      <div class="empty">
+        <span class="material-symbols-rounded" style="font-size:3rem;color:var(--t4);">favorite</span>
+        <p>Sign in to keep lodges you like.</p>
+        <a href="auth-seeker.html" class="btn-gate" style="margin-top:12px;display:inline-flex;">Sign in</a>
       </div>`;
     return;
   }
-
-  const saved = seekerState.listings.filter(l => seekerState.loved.has(l.id));
+  const saved = seekerState.listings.filter((l) => seekerState.loved.has(l.id));
   if (!saved.length) {
-    container.innerHTML = `
-      <div class="empty" style="padding:30px 0;">
-        <span class="material-symbols-rounded" style="font-size:3rem;color:var(--t4);">favorite_border</span>
-        <p>No saved listings yet.<br>Tap the heart on any room to save it here.</p>
-      </div>`;
+    API.social.favorites().then(async (fav) => {
+      seekerState.loved = new Set(fav.ids || []);
+      const ids = [...seekerState.loved];
+      if (!ids.length) {
+        container.innerHTML = `<div class="empty"><p>No saved lodges yet. Tap the heart on a listing.</p></div>`;
+        return;
+      }
+      try {
+        const all = await API.listings.list({});
+        seekerState.listings = all.listings || [];
+        const items = seekerState.listings.filter((l) => seekerState.loved.has(l.id));
+        container.innerHTML = items.map((l, i) => renderSeekerListingCard(l, i)).join('')
+          || `<div class="empty"><p>No saved lodges yet.</p></div>`;
+      } catch {
+        container.innerHTML = `<div class="empty"><p>Could not load saved lodges.</p></div>`;
+      }
+    }).catch(() => {
+      container.innerHTML = `<div class="empty"><p>Could not load saved lodges.</p></div>`;
+    });
     return;
   }
-
   container.innerHTML = saved.map((l, i) => renderSeekerListingCard(l, i)).join('');
 }
 
 async function renderProfile() {
-  const container = document.getElementById('profile-cont');
-  if (!container) return;
-
-  let session = getSession();
-  if (!session?.loggedIn && localStorage.getItem(KR_CONFIG.tokenKey)) {
-    session = await bootstrapAuth();
-  }
-
+  const cont = document.getElementById('profile-cont');
+  if (!cont) return;
+  const session = getSession();
   if (!session?.loggedIn) {
-    container.innerHTML = `
+    cont.innerHTML = `
       <div class="profile-card">
         <div class="profile-top">
           <div class="profile-av">G</div>
           <div>
             <div class="profile-name">Guest</div>
-            <div class="profile-role">Browsing without account</div>
+            <div class="profile-role">Browsing without an account</div>
           </div>
         </div>
-        <p style="font-size:.78rem;color:var(--t3);line-height:1.6;margin-bottom:14px;">
-          Sign in to contact agents, save listings, and track your inquiries securely.
-        </p>
-        <button class="btn-profile teal" onclick="goPage('auth-seeker.html')">
+        <p class="profile-meta">You can inquire on WhatsApp without signing up. Sign in only to save lodges and sync across devices.</p>
+        <a href="auth-seeker.html" class="btn-profile teal">
           <span class="material-symbols-rounded ms" style="font-size:1rem;">login</span>
-          Sign In / Create Account
-        </button>
-        <button class="btn-profile outline" onclick="goPage('index.html')">
-          <span class="material-symbols-rounded ms" style="font-size:1rem;">home</span>
-          Back to Home
-        </button>
+          Sign in / Create account
+        </a>
       </div>`;
     return;
   }
-
-  let user = session;
-  try {
-    const data = await API.auth.me();
-    if (data.user) {
-      user = { ...session, ...mapApiUser(data.user) };
-      setSession(user);
-    }
-  } catch { /* use cached session */ }
-
-  const initial = (user.name || 'S').charAt(0).toUpperCase();
-  container.innerHTML = `
+  cont.innerHTML = `
     <div class="profile-card">
       <div class="profile-top">
-        <div class="profile-av">${initial}</div>
+        <div class="profile-av">${(session.name || 'S').charAt(0).toUpperCase()}</div>
         <div>
-          <div class="profile-name">${escapeHtml(user.name || 'Student')}</div>
-          <div class="profile-role">NSUK Student Seeker</div>
+          <div class="profile-name">${escapeHtml(session.name || 'Student')}</div>
+          <div class="profile-role">Student account</div>
         </div>
       </div>
-      ${user.email ? `<div class="profile-row"><span class="material-symbols-rounded ms">mail</span>${escapeHtml(user.email)}</div>` : ''}
-      ${user.phone ? `<div class="profile-row"><span class="material-symbols-rounded ms">phone</span>${escapeHtml(user.phone)}</div>` : ''}
-      <div class="profile-row"><span class="material-symbols-rounded ms">favorite</span>${seekerState.loved.size} saved listing${seekerState.loved.size !== 1 ? 's' : ''}</div>
-    </div>
-    <div class="profile-card">
-      <button class="btn-profile outline" onclick="skTab('saved', document.getElementById('bn-saved'))">
-        <span class="material-symbols-rounded ms">favorite</span>
-        View Saved Listings
+      <div class="profile-row"><span class="material-symbols-rounded ms">mail</span>${escapeHtml(session.email || '—')}</div>
+      <div class="profile-row"><span class="material-symbols-rounded ms">call</span>${escapeHtml(session.phone || '—')}</div>
+      <button type="button" class="btn-profile outline" onclick="setStudentMode('lodge', document.getElementById('mode-lodge')); skTab('home', document.getElementById('bn-home'));">
+        Browse lodges
       </button>
-      <button class="btn-profile outline" onclick="goPage('reset-password.html')">
-        <span class="material-symbols-rounded ms">lock_reset</span>
-        Change Password
+      <button type="button" class="btn-profile outline" onclick="setStudentMode('stay', document.getElementById('mode-stay')); skTab('home', document.getElementById('bn-home'));">
+        Browse short stays
       </button>
-      <button class="btn-profile danger" onclick="signOut()">
-        <span class="material-symbols-rounded ms">logout</span>
-        Sign Out
-      </button>
+      <button type="button" class="btn-profile danger" onclick="signOut()">Sign out</button>
     </div>`;
 }

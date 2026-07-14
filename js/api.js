@@ -99,6 +99,7 @@ function mapApiUser(u) {
     isMaster: u.role === 'admin',
     isPromotedAgent: u.role === 'agent' && !!u.isPromotedAdmin,
     agentStatus: u.agentStatus,
+    hotelOwnerStatus: u.hotelOwnerStatus,
     via: 'api',
   };
 }
@@ -115,6 +116,8 @@ const API = {
       apiFetch('/auth/register/seeker', { method: 'POST', body }),
     registerAgent: (body) =>
       apiFetch('/auth/register/agent', { method: 'POST', body }),
+    registerHotel: (body) =>
+      apiFetch('/auth/register/hotel', { method: 'POST', body }),
     logout: () => apiFetch('/auth/logout', { method: 'POST' }),
     me: () => apiFetch('/auth/me'),
     forgotPassword: (email, role) =>
@@ -168,6 +171,25 @@ const API = {
     kpi: () => apiFetch('/admin/kpi'),
     activity: () => apiFetch('/admin/activity'),
     fees: () => apiFetch('/admin/fees'),
+    hotels: () => apiFetch('/admin/hotels'),
+    hotel: (id) => apiFetch(`/admin/hotels/${id}`),
+    createHotel: (formData) =>
+      apiFetch('/admin/hotels', { method: 'POST', body: formData }),
+    updateHotel: (id, formDataOrBody) =>
+      apiFetch(`/admin/hotels/${id}`, { method: 'PATCH', body: formDataOrBody }),
+    createHotelRoom: (hotelId, body) =>
+      apiFetch(`/admin/hotels/${hotelId}/rooms`, { method: 'POST', body }),
+    updateHotelRoom: (roomId, body) =>
+      apiFetch(`/admin/rooms/${roomId}`, { method: 'PATCH', body }),
+    hotelBookings: (status) => {
+      const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+      return apiFetch(`/admin/hotel-bookings${qs}`);
+    },
+    setHotelBookingStatus: (id, status) =>
+      apiFetch(`/admin/hotel-bookings/${id}/status`, { method: 'PATCH', body: { status } }),
+    pendingHotelOwners: () => apiFetch('/admin/hotel-owners/pending'),
+    setHotelOwnerStatus: (id, status) =>
+      apiFetch(`/admin/hotel-owners/${id}/status`, { method: 'PATCH', body: { status } }),
   },
   social: {
     createInquiry: (body) => apiFetch('/inquiries', { method: 'POST', body }),
@@ -177,6 +199,18 @@ const API = {
       apiFetch(`/favorites/${listingId}`, { method: 'POST' }),
     sendMessage: (conversationId, body) =>
       apiFetch(`/conversations/${conversationId}/messages`, { method: 'POST', body: { body } }),
+  },
+  hotels: {
+    list: () => apiFetch('/hotels'),
+    get: (id) => apiFetch(`/hotels/${id}`),
+    book: (body) => apiFetch('/hotels/bookings', { method: 'POST', body }),
+  },
+  hotelOwner: {
+    mine: () => apiFetch('/hotel-owner/mine'),
+    updateMine: (body) => apiFetch('/hotel-owner/mine', { method: 'PATCH', body }),
+    addRoom: (body) => apiFetch('/hotel-owner/mine/rooms', { method: 'POST', body }),
+    updateRoom: (id, body) => apiFetch(`/hotel-owner/rooms/${id}`, { method: 'PATCH', body }),
+    bookings: () => apiFetch('/hotel-owner/mine/bookings'),
   },
 };
 

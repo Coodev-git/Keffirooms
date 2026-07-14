@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Short stay — KeffiRooms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/hotels.css">
+<style>
+[data-theme="dark"]{--bg:#0A0A0A;--bg2:#111;--bg3:#161616;--bg4:#1C1C1C;--card:#141414;--t1:#fff;--t2:rgba(255,255,255,.75);--t3:rgba(255,255,255,.45);--t4:rgba(255,255,255,.25);--t5:rgba(255,255,255,.1);--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);--sh:0 4px 24px rgba(0,0,0,.45);--teal-l:#2DD4BF;--gold-l:#F0B429;}
+[data-theme="light"]{--bg:#F4F7F6;--bg2:#fff;--bg3:#EEF2F0;--bg4:#E4EAE8;--card:#fff;--t1:#0A1816;--t2:#1A3330;--t3:#2D4A45;--t4:#4A6B65;--t5:rgba(13,31,28,.1);--border:rgba(13,31,28,.12);--border2:rgba(13,31,28,.2);--sh:0 4px 24px rgba(13,31,28,.1);--teal-l:#0B7A70;--gold-l:#9A5E20;}
+</style>
+</head>
+<body>
+<div class="hs-page">
+  <nav class="appbar">
+    <div class="appbar-brand" onclick="goPage('seeker.html?mode=stay')" style="cursor:pointer;">
+      <div class="appbar-logo"><span class="material-symbols-rounded ms" style="font-size:1rem;color:white;">arrow_back</span></div>
+      <div class="appbar-name">Short <span class="r">stay</span></div>
+    </div>
+    <div class="appbar-right">
+      <button class="signout-btn" onclick="toggleTheme()" type="button">
+        <span class="material-symbols-rounded ms" style="font-size:.9rem;" id="theme-icon">dark_mode</span>
+      </button>
+    </div>
+  </nav>
+
+  <div id="hs-detail-root">
+    <div class="empty" style="padding:40px 16px;text-align:center;color:var(--t3);">Loading…</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span class="material-symbols-rounded ms" style="font-size:.9rem;color:var(--teal-l);">check_circle</span>
+  <span id="toast-msg">Done</span>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/hotels.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  applyTheme();
+  await initPlatform();
+  const id = new URLSearchParams(location.search).get('id');
+  if (!id) {
+    goPage('hotels.html');
+    return;
+  }
+  await renderHotelDetail(id);
+});
+</script>
+</body>
+</html>
