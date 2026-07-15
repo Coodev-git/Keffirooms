@@ -17,8 +17,19 @@ const BOOKING_STATUSES = [
 const HOTEL_PHOTO_MAX = 6;
 const ROOM_PHOTO_MAX = 4;
 
+function normalizePhotoEntries(list) {
+  const arr = Array.isArray(list) ? list : parseJsonArray(list);
+  return arr.map((item) => {
+    if (typeof item === 'string' && item.trim()) return { url: item.trim(), metadata: null };
+    if (item && typeof item === 'object' && item.url) {
+      return { url: String(item.url), metadata: item.metadata || null };
+    }
+    return null;
+  }).filter(Boolean);
+}
+
 function clampPhotoList(list, max) {
-  return (Array.isArray(list) ? list : []).filter(Boolean).slice(0, max);
+  return normalizePhotoEntries(list).slice(0, max);
 }
 
 function parseJsonArray(value) {
@@ -52,9 +63,16 @@ function generateBookingCode() {
   return `KR-${code}`;
 }
 
-function hotelToClient(row, rooms = [], { includeAddress = false, includePhones = false, includePin = false } = {}) {
+function hotelToClient(row, rooms = [], {
+  includeAddress = false,
+  includePhones = false,
+  includePin = false,
+  includePhotoMeta = false,
+} = {}) {
   if (!row) return null;
   const hasPin = row.pin_lat != null && row.pin_lng != null;
+  const photoEntries = clampPhotoList(row.photos, HOTEL_PHOTO_MAX);
+  const roomsClient = rooms.map((r) => roomToClient(r, { includePhotoMeta }));
   const hotel = {
     id: row.id,
     name: row.name,
@@ -64,7 +82,7 @@ function hotelToClient(row, rooms = [], { includeAddress = false, includePhones 
     priceRangeMin: row.price_range_min,
     priceRangeMax: row.price_range_max,
     rating: row.rating != null ? Number(row.rating) : null,
-    photos: clampPhotoList(parseJsonArray(row.photos), HOTEL_PHOTO_MAX),
+    photos: photoEntries.map((e) => e.url),
     amenities: parseJsonArray(row.amenities),
     isActive: row.is_active,
     verifyStatus: row.verify_status || 'verified',
@@ -75,11 +93,15 @@ function hotelToClient(row, rooms = [], { includeAddress = false, includePhones 
     hasPin,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    rooms: rooms.map(roomToClient),
+    rooms: roomsClient,
   };
-  const roomPhotos = hotel.rooms.flatMap((r) => r.photos || []).slice(0, 8);
+  const roomPhotos = roomsClient.flatMap((r) => r.photos || []).slice(0, 8);
   hotel.proofPhotos = [...hotel.photos, ...roomPhotos].slice(0, 8);
   hotel.roomCount = hotel.rooms.length;
+  if (includePhotoMeta) {
+    hotel.photoMetadata = photoEntries.map((e) => e.metadata);
+    hotel.photoEntries = photoEntries;
+  }
   if (includeAddress) hotel.locationAddress = row.location_address;
   if (includePin && hasPin) {
     hotel.pinLat = Number(row.pin_lat);
@@ -114,19 +136,25 @@ function parsePin(data) {
   };
 }
 
-function roomToClient(row) {
+function roomToClient(row, { includePhotoMeta = false } = {}) {
   if (!row) return null;
-  return {
+  const photoEntries = clampPhotoList(row.photos, ROOM_PHOTO_MAX);
+  const room = {
     id: row.id,
     hotelId: row.hotel_id,
     roomType: row.room_type,
     price: row.price,
     description: row.description,
     isAvailable: row.is_available,
-    photos: clampPhotoList(parseJsonArray(row.photos), ROOM_PHOTO_MAX),
+    photos: photoEntries.map((e) => e.url),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+  if (includePhotoMeta) {
+    room.photoMetadata = photoEntries.map((e) => e.metadata);
+    room.photoEntries = photoEntries;
+  }
+  return room;
 }
 
 function bookingToClient(row, { includeStudentPhone = false } = {}) {
@@ -196,6 +224,7 @@ export async function listAllHotelsAdmin() {
     includeAddress: true,
     includePhones: true,
     includePin: true,
+    includePhotoMeta: true,
   }));
 }
 
@@ -213,6 +242,7 @@ export async function getHotelById(id, { admin = false, ownerId = null } = {}) {
     includeAddress: admin || isOwner,
     includePhones: admin || isOwner,
     includePin: admin || isOwner,
+    includePhotoMeta: admin || isOwner,
   });
 }
 
@@ -296,7 +326,12 @@ export async function createHotel(data) {
       pin.pinAcc,
     ]
   );
-  return hotelToClient(rows[0], [], { includeAddress: true, includePhones: true, includePin: true });
+  return hotelToClient(rows[0], [], {
+    includeAddress: true,
+    includePhones: true,
+    includePin: true,
+    includePhotoMeta: true,
+  });
 }
 
 export async function updateHotel(id, data) {
@@ -321,7 +356,7 @@ export async function updateHotel(id, data) {
 
   const photos = data.photos !== undefined
     ? clampPhotoList(data.photos, HOTEL_PHOTO_MAX)
-    : clampPhotoList(existing.photos, HOTEL_PHOTO_MAX);
+    : clampPhotoList(existing.photoEntries || existing.photos, HOTEL_PHOTO_MAX);
   const amenities = data.amenities !== undefined ? data.amenities : existing.amenities;
   const nextPin = (data.pinLat !== undefined || data.pinLng !== undefined)
     ? parsePin(data)
@@ -374,7 +409,12 @@ export async function updateHotel(id, data) {
     ]
   );
   const roomsMap = await loadRoomsForHotels([id]);
-  return hotelToClient(rows[0], roomsMap[id] || [], { includeAddress: true, includePhones: true, includePin: true });
+  return hotelToClient(rows[0], roomsMap[id] || [], {
+    includeAddress: true,
+    includePhones: true,
+    includePin: true,
+    includePhotoMeta: true,
+  });
 }
 
 export async function createHotelRoom(hotelId, data) {
@@ -399,10 +439,10 @@ export async function createHotelRoom(hotelId, data) {
 export async function updateHotelRoom(roomId, data) {
   const { rows: existing } = await query(`SELECT * FROM hotel_rooms WHERE id = $1`, [roomId]);
   if (!existing[0]) throw new AppError('Room not found', 404, 'ROOM_NOT_FOUND');
-  const current = roomToClient(existing[0]);
+  const current = roomToClient(existing[0], { includePhotoMeta: true });
   const photos = data.photos !== undefined
     ? clampPhotoList(data.photos, ROOM_PHOTO_MAX)
-    : current.photos;
+    : (current.photoEntries || []);
 
   const { rows } = await query(
     `UPDATE hotel_rooms SET
@@ -422,7 +462,7 @@ export async function updateHotelRoom(roomId, data) {
       JSON.stringify(photos),
     ]
   );
-  return roomToClient(rows[0]);
+  return roomToClient(rows[0], { includePhotoMeta: true });
 }
 
 /** Expire overdue pending bookings (check-on-read) */

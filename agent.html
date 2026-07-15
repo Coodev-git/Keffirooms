@@ -264,11 +264,11 @@
             </div>
             <div class="photo-drop" onclick="document.getElementById('pfi').click()">
               <span class="material-symbols-rounded ms" style="font-size:1.8rem;display:block;margin:0 auto 10px;color:var(--teal-l);">add_a_photo</span>
-              <p><strong>Tap to take or upload photos</strong><br>
-              Minimum 5 · Maximum 12 · GPS metadata auto-attached.<br>
-              <span style="color:var(--teal-l);font-size:.72rem;">Images are hosted and sent in WhatsApp inquiries</span></p>
+              <p><strong>Take a photo or choose from gallery</strong><br>
+              Minimum 5 · Maximum 12 · EXIF + GPS metadata for admin only.<br>
+              <span style="color:var(--teal-l);font-size:.72rem;">Phone gallery and camera both work</span></p>
             </div>
-            <input type="file" id="pfi" accept="image/*" multiple capture="environment" onchange="handlePhotos(event)">
+            <input type="file" id="pfi" accept="image/*" multiple onchange="handlePhotos(event)">
             <div class="photo-count-lbl" id="photo-count-lbl">0 / 12 photos added (min. 5)</div>
             <div class="photo-row" id="photo-row"></div>
             <div style="margin-top:14px;">

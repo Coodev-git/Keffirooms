@@ -133,6 +133,7 @@ async function renderHoTab() {
       <label>Cover photos (max 6 total)
         ${(h.photos || []).length ? `<div class="ho-cover-strip" style="margin:8px 0;">${h.photos.map((p) => `<img src="${escapeHtml(p)}" alt="">`).join('')}</div>` : ''}
         <input name="photos" type="file" accept="image/*" multiple>
+        <span class="ho-hint">Pick from phone gallery or camera · photo GPS/EXIF is admin-only</span>
       </label>
       <button type="submit" class="hs-btn-teal">Save storefront</button>
     </form>
@@ -166,6 +167,7 @@ function hoOpenRoomForm(roomId) {
         <label>Room photos (max 4 — social proof)
           ${room?.photos?.length ? `<div class="ho-photo-row">${room.photos.map((p) => `<img src="${escapeHtml(p)}" alt="">`).join('')}</div>` : ''}
           <input name="photos" type="file" accept="image/*" multiple>
+          <span class="ho-hint">Gallery or camera · EXIF metadata goes to admin only</span>
         </label>
         <div class="hs-adm-actions">
           <button type="submit" class="hs-btn-teal">${room ? 'Save' : 'Add to shop'}</button>
@@ -175,6 +177,17 @@ function hoOpenRoomForm(roomId) {
     </div>`;
 }
 
+async function collectFilesWithMeta(fileList, max) {
+  const files = Array.from(fileList || []).slice(0, max);
+  if (!files.length) return { files: [], meta: [] };
+  const gps = await getGPS();
+  const meta = [];
+  for (const f of files) {
+    meta.push(await buildPhotoUploadMetadata(f, gps));
+  }
+  return { files, meta };
+}
+
 async function hoSaveRoom(e, roomId) {
   e.preventDefault();
   const form = e.target;
@@ -182,13 +195,12 @@ async function hoSaveRoom(e, roomId) {
   fd.append('roomType', form.roomType.value.trim());
   fd.append('price', form.price.value);
   fd.append('description', form.description.value.trim());
-  const files = form.photos?.files;
-  if (files?.length) {
-    const max = roomId
-      ? Math.max(0, 4 - ((hoState.hotel.rooms || []).find((r) => r.id === roomId)?.photos?.length || 0))
-      : 4;
-    for (let i = 0; i < Math.min(files.length, max || 4); i += 1) fd.append('photos', files[i]);
-  }
+  const max = roomId
+    ? Math.max(0, 4 - ((hoState.hotel.rooms || []).find((r) => r.id === roomId)?.photos?.length || 0))
+    : 4;
+  const { files, meta } = await collectFilesWithMeta(form.photos?.files, max || 4);
+  files.forEach((f) => fd.append('photos', f));
+  if (meta.length) fd.append('photoMetadata', JSON.stringify(meta));
   try {
     if (roomId) await API.hotelOwner.updateRoom(roomId, fd);
     else await API.hotelOwner.addRoom(fd);
@@ -222,11 +234,10 @@ async function hoSaveDetails(e) {
   }
   const am = String(form.amenities.value || '').split(',').map((s) => s.trim()).filter(Boolean);
   fd.append('amenities', JSON.stringify(am));
-  const files = form.photos?.files;
-  if (files?.length) {
-    const left = Math.max(0, 6 - (hoState.hotel.photos?.length || 0));
-    for (let i = 0; i < Math.min(files.length, left || 6); i += 1) fd.append('photos', files[i]);
-  }
+  const left = Math.max(0, 6 - (hoState.hotel.photos?.length || 0));
+  const { files, meta } = await collectFilesWithMeta(form.photos?.files, left || 6);
+  files.forEach((f) => fd.append('photos', f));
+  if (meta.length) fd.append('photoMetadata', JSON.stringify(meta));
   try {
     await API.hotelOwner.updateMine(fd);
     showToast('Storefront saved');

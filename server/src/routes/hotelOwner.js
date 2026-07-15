@@ -22,6 +22,21 @@ const router = Router();
 const HOTEL_PHOTO_MAX = 6;
 const ROOM_PHOTO_MAX = 4;
 
+function parseMeta(raw, count) {
+  let meta = [];
+  try {
+    meta = typeof raw === 'string' ? JSON.parse(raw || '[]') : (raw || []);
+  } catch {
+    meta = [];
+  }
+  if (!Array.isArray(meta)) meta = [];
+  return Array.from({ length: count }, (_, i) => meta[i] || null);
+}
+
+function asPhotoEntries(urls, meta) {
+  return (urls || []).map((url, i) => ({ url, metadata: meta[i] || null }));
+}
+
 router.use(authenticate, requireHotelOwnerApproved);
 
 router.get(
@@ -41,8 +56,11 @@ router.patch(
     const patch = { ...req.body };
     if (req.files?.length) {
       const uploaded = await uploadHotelImages(req.files);
-      patch.photos = [...(hotel.photos || []), ...uploaded].slice(0, HOTEL_PHOTO_MAX);
+      const meta = parseMeta(req.body.photoMetadata, uploaded.length);
+      const existing = hotel.photoEntries || (hotel.photos || []).map((url) => ({ url, metadata: null }));
+      patch.photos = [...existing, ...asPhotoEntries(uploaded, meta)].slice(0, HOTEL_PHOTO_MAX);
     }
+    delete patch.photoMetadata;
     if (typeof req.body.amenities === 'string') {
       try {
         patch.amenities = JSON.parse(req.body.amenities);
@@ -71,7 +89,9 @@ router.post(
     const hotel = await getHotelForOwner(req.user.id);
     let photos = [];
     if (req.files?.length) {
-      photos = await uploadHotelImages(req.files);
+      const uploaded = await uploadHotelImages(req.files);
+      const meta = parseMeta(req.body.photoMetadata, uploaded.length);
+      photos = asPhotoEntries(uploaded, meta);
     }
     const room = await createHotelRoom(hotel.id, {
       roomType: req.body.roomType,
@@ -92,8 +112,8 @@ router.patch(
   asyncHandler(async (req, res) => {
     const hotel = await getHotelForOwner(req.user.id);
     const full = await getHotelById(hotel.id, { ownerId: req.user.id });
-    const existing = (full.rooms || []).find((r) => r.id === req.params.id);
-    if (!existing) throw new AppError('Room not found', 404, 'ROOM_NOT_FOUND');
+    const existingRoom = (full.rooms || []).find((r) => r.id === req.params.id);
+    if (!existingRoom) throw new AppError('Room not found', 404, 'ROOM_NOT_FOUND');
 
     const patch = { ...req.body };
     if (patch.price != null) patch.price = parseInt(patch.price, 10);
@@ -102,8 +122,12 @@ router.patch(
 
     if (req.files?.length) {
       const uploaded = await uploadHotelImages(req.files);
-      patch.photos = [...(existing.photos || []), ...uploaded].slice(0, ROOM_PHOTO_MAX);
+      const meta = parseMeta(req.body.photoMetadata, uploaded.length);
+      const existing = existingRoom.photoEntries
+        || (existingRoom.photos || []).map((url) => ({ url, metadata: null }));
+      patch.photos = [...existing, ...asPhotoEntries(uploaded, meta)].slice(0, ROOM_PHOTO_MAX);
     }
+    delete patch.photoMetadata;
 
     const updated = await updateHotelRoom(req.params.id, patch);
     res.json({ room: updated });

@@ -461,6 +461,187 @@ function getDevice() {
   return 'Desktop';
 }
 
+/** Read EXIF (GPS / camera / taken-at) from gallery or camera JPEGs. Admin-facing only. */
+function extractImageMetadata(file) {
+  return new Promise((resolve) => {
+    const base = {
+      file_name: file?.name || null,
+      size_kb: file?.size ? Math.round(file.size / 1024) : null,
+      mime: file?.type || null,
+      uploaded_at: new Date().toISOString(),
+      source: 'phone_gallery_or_camera',
+      device: getDevice(),
+    };
+    if (!file || !file.size) {
+      resolve(base);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => resolve(base);
+    reader.onload = () => {
+      try {
+        const buf = reader.result;
+        const view = new DataView(buf);
+        const exif = parseJpegExif(view);
+        resolve({ ...base, ...exif });
+      } catch {
+        resolve(base);
+      }
+    };
+    reader.readAsArrayBuffer(file.slice(0, Math.min(file.size, 512 * 1024)));
+  });
+}
+
+function parseJpegExif(view) {
+  if (view.byteLength < 4 || view.getUint16(0) !== 0xFFD8) return {};
+  let offset = 2;
+  while (offset + 4 < view.byteLength) {
+    if (view.getUint8(offset) !== 0xFF) break;
+    const marker = view.getUint8(offset + 1);
+    const size = view.getUint16(offset + 2);
+    if (marker === 0xE1 && offset + 10 < view.byteLength) {
+      if (getAscii(view, offset + 4, 4) === 'Exif') {
+        return readExifTiff(view, offset + 10);
+      }
+    }
+    if (marker === 0xDA) break;
+    offset += 2 + size;
+  }
+  return {};
+}
+
+function getAscii(view, start, len) {
+  let s = '';
+  for (let i = 0; i < len; i += 1) s += String.fromCharCode(view.getUint8(start + i));
+  return s;
+}
+
+function readExifTiff(view, tiffStart) {
+  if (tiffStart + 8 > view.byteLength) return {};
+  const le = getAscii(view, tiffStart, 2) === 'II';
+  const u16 = (o) => (le ? view.getUint16(o, true) : view.getUint16(o, false));
+  const u32 = (o) => (le ? view.getUint32(o, true) : view.getUint32(o, false));
+  const ifd0 = tiffStart + u32(tiffStart + 4);
+  const tags0 = readIfd(view, ifd0, tiffStart, le, u16, u32);
+  const out = {};
+  if (tags0[0x010F]) out.camera_make = String(tags0[0x010F]).trim();
+  if (tags0[0x0110]) out.camera_model = String(tags0[0x0110]).trim();
+  if (tags0[0x0132]) out.exif_modified = String(tags0[0x0132]).trim();
+  if (tags0[0x8769]) {
+    const exif = readIfd(view, tiffStart + tags0[0x8769], tiffStart, le, u16, u32);
+    if (exif[0x9003]) out.taken_at = exifDateToIso(String(exif[0x9003]));
+    else if (exif[0x9004]) out.taken_at = exifDateToIso(String(exif[0x9004]));
+  }
+  if (tags0[0x8825]) {
+    const gps = readIfd(view, tiffStart + tags0[0x8825], tiffStart, le, u16, u32);
+    const lat = dmsToDecimal(gps[2], gps[1]);
+    const lng = dmsToDecimal(gps[4], gps[3]);
+    if (lat != null && lng != null) {
+      out.gps_lat = Number(lat.toFixed(6));
+      out.gps_lng = Number(lng.toFixed(6));
+      out.gps_from_photo = true;
+    }
+  }
+  if (out.camera_make || out.camera_model) {
+    out.device = [out.camera_make, out.camera_model].filter(Boolean).join(' ');
+  }
+  return out;
+}
+
+function readIfd(view, ifdOffset, tiffStart, le, u16, u32) {
+  const tags = {};
+  if (ifdOffset + 2 > view.byteLength) return tags;
+  const count = u16(ifdOffset);
+  for (let i = 0; i < count; i += 1) {
+    const entry = ifdOffset + 2 + i * 12;
+    if (entry + 12 > view.byteLength) break;
+    const tag = u16(entry);
+    const type = u16(entry + 2);
+    const num = u32(entry + 4);
+    const typeSize = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1 }[type] || 1;
+    const byteLen = typeSize * num;
+    let valueOffset = entry + 8;
+    if (byteLen > 4) {
+      valueOffset = tiffStart + u32(entry + 8);
+    }
+    if (valueOffset + byteLen > view.byteLength) continue;
+    tags[tag] = readExifValue(view, valueOffset, type, num, le, u16, u32);
+  }
+  return tags;
+}
+
+function readExifValue(view, offset, type, num, le, u16, u32) {
+  if (type === 2) {
+    let s = '';
+    for (let i = 0; i < num; i += 1) {
+      const c = view.getUint8(offset + i);
+      if (c === 0) break;
+      s += String.fromCharCode(c);
+    }
+    return s;
+  }
+  if (type === 3) {
+    if (num === 1) return u16(offset);
+    const arr = [];
+    for (let i = 0; i < num; i += 1) arr.push(u16(offset + i * 2));
+    return arr;
+  }
+  if (type === 4) {
+    if (num === 1) return u32(offset);
+    const arr = [];
+    for (let i = 0; i < num; i += 1) arr.push(u32(offset + i * 4));
+    return arr;
+  }
+  if (type === 5) {
+    const readRational = (o) => {
+      const n = u32(o);
+      const d = u32(o + 4);
+      return d ? n / d : 0;
+    };
+    if (num === 1) return readRational(offset);
+    const arr = [];
+    for (let i = 0; i < num; i += 1) arr.push(readRational(offset + i * 8));
+    return arr;
+  }
+  return null;
+}
+
+function dmsToDecimal(dms, ref) {
+  if (!Array.isArray(dms) || dms.length < 3) return null;
+  let dec = Number(dms[0]) + Number(dms[1]) / 60 + Number(dms[2]) / 3600;
+  const r = String(ref || '').toUpperCase();
+  if (r === 'S' || r === 'W') dec = -dec;
+  return Number.isFinite(dec) ? dec : null;
+}
+
+function exifDateToIso(s) {
+  // "YYYY:MM:DD HH:MM:SS"
+  const m = String(s || '').match(/^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+  if (!m) return s || null;
+  const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? s : d.toISOString();
+}
+
+/**
+ * Build admin-only photo trust metadata from file EXIF + optional live GPS fallback.
+ */
+async function buildPhotoUploadMetadata(file, liveGps = null) {
+  const exif = await extractImageMetadata(file);
+  const meta = {
+    ...exif,
+    time: exif.taken_at || exif.uploaded_at || nowStr(),
+  };
+  if (meta.gps_lat == null && liveGps?.lat != null) {
+    meta.gps_lat = liveGps.lat;
+    meta.gps_lng = liveGps.lng;
+    meta.gps_acc = liveGps.acc;
+    meta.gps_from_photo = false;
+    meta.gps_from_device = true;
+  }
+  return meta;
+}
+
 function digitsOnly(phone) {
   return String(phone || '').replace(/\D/g, '');
 }

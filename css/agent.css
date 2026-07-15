@@ -196,6 +196,18 @@
 .gdot.ok { background:rgba(16,185,129,.88); }
 .gdot.no { background:rgba(0,0,0,.65); }
 .gdot svg { width:9px; height:9px; color:white; }
+.photo-meta-tag {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  font-size: .55rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  background: rgba(11, 122, 112, .92);
+  color: #fff;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
 
 /* TRUST CAPTURE BOX */
 .trust-capture-box {

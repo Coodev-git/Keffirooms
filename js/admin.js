@@ -124,9 +124,12 @@ function renderAuditQueueInner(pending, panel) {
               : ` (${escapeHtml(getAgentPhoneFromListing(l) || '—')})`}
           </div>
         </div>
-        ${meta ? `<div class="pqc-seal"><strong>Seal Metadata Check</strong>
-GPS: ${meta.gps_lat ? `${meta.gps_lat} N, ${meta.gps_lng} E` : 'No GPS'}
-Hardware: ${escapeHtml(meta.device || 'Unknown')}</div>`
+        ${meta ? `<div class="pqc-seal"><strong>Seal Metadata Check</strong> (admin only)
+GPS: ${meta.gps_lat ? `${meta.gps_lat}, ${meta.gps_lng}${meta.gps_from_photo ? ' (from photo EXIF)' : meta.gps_from_device ? ' (device at upload)' : ''}` : 'No GPS in photo'}
+Taken: ${escapeHtml(meta.taken_at || meta.time || '—')}
+Camera: ${escapeHtml(meta.camera_make || meta.device || 'Unknown')}${meta.camera_model && !String(meta.device || '').includes(meta.camera_model) ? ` ${escapeHtml(meta.camera_model)}` : ''}
+File: ${escapeHtml(meta.file_name || '—')}${meta.size_kb != null ? ` · ${meta.size_kb} KB` : ''}
+${(l.photoMetadata || []).length > 1 ? `Photos with metadata: ${(l.photoMetadata || []).length}` : ''}</div>`
           : `<div class="pqc-seal" style="color:var(--gold-l);">No metadata — verify manually.</div>`}
         <div class="pqc-actions">
           ${adminListingWaButton(l, `WhatsApp ${formatPhoneDisplay(getAgentPhoneFromListing(l))}`)}
@@ -658,6 +661,7 @@ async function renderHotelManager() {
         <div class="hs-adm-meta">₦${fmtN(h.priceRangeMin)}–₦${fmtN(h.priceRangeMax)} · ${escapeHtml(h.area || '')}
           · Owner: ${escapeHtml(h.ownerName || 'Admin-listed')} (${escapeHtml(h.ownerStatus || '—')})
           · Address: ${escapeHtml(h.locationAddress || '')}</div>
+        ${adminHotelPhotoMetaHtml(h)}
         <div class="hs-adm-actions">
           <button type="button" class="hs-btn-teal" onclick="openHotelForm('${h.id}')">Edit</button>
           <button type="button" class="hs-btn-gold" onclick="openRoomForm('${h.id}')">Add room</button>
@@ -669,6 +673,22 @@ async function renderHotelManager() {
   } catch (e) {
     list.innerHTML = `<div style="padding:16px;color:var(--red);font-size:.8rem;">${escapeHtml(e.message || 'Failed to load')}</div>`;
   }
+}
+
+function adminHotelPhotoMetaHtml(h) {
+  const metas = (h.photoMetadata || []).filter(Boolean);
+  const roomMetas = (h.rooms || []).flatMap((r) => r.photoMetadata || []).filter(Boolean);
+  const all = [...metas, ...roomMetas];
+  if (!all.length) {
+    return '<div class="hs-adm-meta" style="margin-top:6px;">Photo metadata: none yet</div>';
+  }
+  const sample = all[0];
+  return `<div class="pqc-seal" style="margin:8px 0;">
+    <strong>Photo metadata (admin only)</strong> · ${all.length} file(s)<br>
+    GPS: ${sample.gps_lat ? `${sample.gps_lat}, ${sample.gps_lng}${sample.gps_from_photo ? ' · EXIF' : sample.gps_from_device ? ' · device' : ''}` : 'none'}<br>
+    Taken: ${escapeHtml(sample.taken_at || sample.time || '—')}<br>
+    Camera: ${escapeHtml(sample.camera_make || sample.device || '—')}${sample.camera_model ? ` ${escapeHtml(sample.camera_model)}` : ''}
+  </div>`;
 }
 
 async function setHotelOwnerStatus(id, status) {

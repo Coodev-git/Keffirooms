@@ -215,7 +215,10 @@ router.post(
   asyncHandler(async (req, res) => {
     let photos = [];
     if (req.files?.length) {
-      photos = await uploadHotelImages(req.files);
+      const urls = await uploadHotelImages(req.files);
+      let meta = [];
+      try { meta = JSON.parse(req.body.photoMetadata || '[]'); } catch { meta = []; }
+      photos = urls.map((url, i) => ({ url, metadata: meta[i] || null }));
     } else if (req.body.photos) {
       try {
         photos = typeof req.body.photos === 'string'
@@ -267,7 +270,12 @@ router.patch(
     if (req.files?.length) {
       const uploaded = await uploadHotelImages(req.files);
       const existing = await getHotelById(req.params.id, { admin: true });
-      patch.photos = [...(existing.photos || []), ...uploaded];
+      let meta = [];
+      try { meta = JSON.parse(req.body.photoMetadata || '[]'); } catch { meta = []; }
+      const existingEntries = existing.photoEntries
+        || (existing.photos || []).map((url) => ({ url, metadata: null }));
+      const newEntries = uploaded.map((url, i) => ({ url, metadata: meta[i] || null }));
+      patch.photos = [...existingEntries, ...newEntries].slice(0, 6);
     } else if (typeof req.body.photos === 'string') {
       try {
         patch.photos = JSON.parse(req.body.photos);
@@ -301,7 +309,10 @@ router.post(
   asyncHandler(async (req, res) => {
     let photos = [];
     if (req.files?.length) {
-      photos = await uploadHotelImages(req.files);
+      const urls = await uploadHotelImages(req.files);
+      let meta = [];
+      try { meta = JSON.parse(req.body.photoMetadata || '[]'); } catch { meta = []; }
+      photos = urls.map((url, i) => ({ url, metadata: meta[i] || null }));
     }
     const room = await createHotelRoom(req.params.id, {
       roomType: req.body.roomType,
@@ -328,16 +339,21 @@ router.patch(
       const { query } = await import('../db/pool.js');
       const { rows } = await query('SELECT photos FROM hotel_rooms WHERE id = $1', [req.params.id]);
       if (!rows[0]) {
-        const { AppError } = await import('../utils/errors.js');
         throw new AppError('Room not found', 404, 'ROOM_NOT_FOUND');
       }
       const uploaded = await uploadHotelImages(req.files);
+      let meta = [];
+      try { meta = JSON.parse(req.body.photoMetadata || '[]'); } catch { meta = []; }
       let current = rows[0].photos;
       if (typeof current === 'string') {
         try { current = JSON.parse(current); } catch { current = []; }
       }
       if (!Array.isArray(current)) current = [];
-      patch.photos = [...current, ...uploaded].slice(0, 4);
+      const existing = current.map((item) => (
+        typeof item === 'string' ? { url: item, metadata: null } : item
+      ));
+      const newEntries = uploaded.map((url, i) => ({ url, metadata: meta[i] || null }));
+      patch.photos = [...existing, ...newEntries].slice(0, 4);
     }
     const room = await updateHotelRoom(req.params.id, patch);
     res.json({ room });

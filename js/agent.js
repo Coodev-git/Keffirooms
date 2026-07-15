@@ -299,28 +299,24 @@ function agTab(tab, el) {
 async function handlePhotos(e) {
   const files = Array.from(e.target.files).slice(0, 12 - agentState.photos.length);
   if (!files.length) return;
-  showToast('Attaching GPS metadata...');
+  showToast('Reading photo metadata…');
   const gps = await getGPS();
-  const now = nowStr();
-  const dev = getDevice();
 
   for (const f of files) {
+    const metadata = await buildPhotoUploadMetadata(f, gps);
     const obj = {
       file: f,
       preview: URL.createObjectURL(f),
-      metadata: {
-        time: now,
-        gps_lat: gps.lat,
-        gps_lng: gps.lng,
-        gps_acc: gps.acc,
-        device: dev,
-        size_kb: Math.round(f.size / 1024),
-      },
+      metadata,
     };
     agentState.photos.push(obj);
   }
   renderPhotoPreviews();
-  showToast(gps.lat ? `GPS ±${gps.acc} captured` : 'Metadata attached (no GPS)');
+  const withGps = agentState.photos.filter((p) => p.metadata?.gps_lat).length;
+  showToast(withGps
+    ? `Added ${files.length} photo(s) · ${withGps} with GPS for admin`
+    : `Added ${files.length} photo(s) · metadata saved for admin`);
+  e.target.value = '';
 }
 
 function renderPhotoPreviews() {
@@ -348,6 +344,7 @@ function renderPhotoPreviews() {
       <div class="gdot ${p.metadata?.gps_lat ? 'ok' : 'no'}">
         <span class="material-symbols-rounded" style="font-size:.6rem;">${p.metadata?.gps_lat ? 'location_on' : 'schedule'}</span>
       </div>
+      ${p.metadata?.gps_from_photo ? '<span class="photo-meta-tag">EXIF</span>' : ''}
     </div>`).join('');
   c.innerHTML = existingHtml + newHtml;
 }
