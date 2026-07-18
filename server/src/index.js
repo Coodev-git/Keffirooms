@@ -17,6 +17,7 @@ import adminRoutes from './routes/admin.js';
 import socialRoutes from './routes/social.js';
 import hotelRoutes from './routes/hotels.js';
 import hotelOwnerRoutes from './routes/hotelOwner.js';
+import seoRoutes from './routes/seo.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientRoot = path.resolve(__dirname, '../../');
@@ -138,6 +139,9 @@ app.use('/api/hotels', hotelRoutes);
 app.use('/api/hotel-owner', hotelOwnerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', socialRoutes);
+
+// Public SEO endpoints (before static so they are never shadowed by files)
+app.use(seoRoutes);
 
 app.use(express.static(clientRoot, { index: 'index.html', extensions: ['html'] }));
 

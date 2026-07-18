@@ -208,6 +208,20 @@ export async function listActiveHotels() {
   return rows.map((r) => hotelToClient(r, roomsMap[r.id] || []));
 }
 
+/** Lightweight ids for sitemap.xml (no rooms / photos). */
+export async function listActiveHotelsForSitemap() {
+  const { rows } = await query(
+    `SELECT id, created_at, updated_at FROM hotels
+     WHERE is_active = TRUE AND verify_status = 'verified'
+     ORDER BY updated_at DESC NULLS LAST, created_at DESC`
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
+}
+
 export async function listAllHotelsAdmin() {
   const { rows } = await query(
     `SELECT h.*,
