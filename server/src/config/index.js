@@ -27,11 +27,14 @@ function resolvePublicUrl(name, fallback = defaultAppUrl) {
   return value;
 }
 
+const appUrl = resolvePublicUrl('APP_URL');
+const clientUrl = resolvePublicUrl('CLIENT_URL');
+
 export const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3000', 10),
-  appUrl: resolvePublicUrl('APP_URL'),
-  clientUrl: resolvePublicUrl('CLIENT_URL'),
+  appUrl,
+  clientUrl,
   databaseUrl: required('DATABASE_URL', 'postgresql://keffirooms:keffirooms@localhost:5432/keffirooms'),
   jwt: {
     accessSecret: required('JWT_ACCESS_SECRET', 'dev-access-secret-change-in-production-32chars'),
@@ -40,9 +43,11 @@ export const config = {
     refreshExpires: process.env.JWT_REFRESH_EXPIRES || '7d',
   },
   google: {
-    clientId: process.env.GOOGLE_CLIENT_ID || '',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    callbackUrl: process.env.GOOGLE_CALLBACK_URL || `${defaultAppUrl}/api/auth/google/callback`,
+    clientId: (process.env.GOOGLE_CLIENT_ID || '').trim(),
+    clientSecret: (process.env.GOOGLE_CLIENT_SECRET || '').trim(),
+    // Prefer custom domain (CLIENT_URL), not the *.onrender.com URL
+    callbackUrl: (process.env.GOOGLE_CALLBACK_URL || '').trim()
+      || `${clientUrl}/api/auth/google/callback`,
   },
   admin: {
     email: process.env.ADMIN_EMAIL || 'keffirooms@gmail.com',

@@ -87,7 +87,8 @@ export function getProductionReadiness() {
     warnings.push('GOOGLE_CLIENT_SECRET is empty — redirect OAuth fallback disabled (popup sign-in may still work)');
   }
 
-  if (config.google.callbackUrl && !config.google.callbackUrl.startsWith(config.clientUrl)) {
+  if (config.google.callbackUrl && config.clientUrl
+      && !config.google.callbackUrl.startsWith(config.clientUrl.replace(/\/$/, ''))) {
     warnings.push(`GOOGLE_CALLBACK_URL should start with CLIENT_URL (${config.clientUrl})`);
   }
 
