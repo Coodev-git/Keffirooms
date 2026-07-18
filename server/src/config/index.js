@@ -16,7 +16,7 @@ function required(name, fallback) {
 const defaultAppUrl = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
 
 function resolvePublicUrl(name, fallback = defaultAppUrl) {
-  const value = process.env[name];
+  const value = process.env[name]?.trim();
   if (!value) return fallback;
   // Ignore localhost URLs pasted from local .env when Render provides the live URL
   if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {

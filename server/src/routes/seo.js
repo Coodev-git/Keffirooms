@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { config } from '../config/index.js';
+import { asyncHandler } from '../middleware/auth.js';
 import { listActiveHotelsForSitemap } from '../services/hotelService.js';
 
 const router = Router();
@@ -7,9 +8,9 @@ const router = Router();
 /** Canonical public site origin for sitemap / robots (prefer www). */
 export function getPublicSiteOrigin() {
   if (process.env.SITEMAP_BASE_URL) {
-    return String(process.env.SITEMAP_BASE_URL).replace(/\/$/, '');
+    return String(process.env.SITEMAP_BASE_URL).trim().replace(/\/$/, '');
   }
-  const raw = config.clientUrl || config.appUrl || 'https://www.keffirooms.ng';
+  const raw = String(config.clientUrl || config.appUrl || 'https://www.keffirooms.ng').trim();
   try {
     const url = new URL(raw);
     if (url.hostname === 'keffirooms.ng' || url.hostname === 'www.keffirooms.ng') {
@@ -83,41 +84,56 @@ router.get('/robots.txt', (req, res) => {
     .send(body);
 });
 
-router.get('/sitemap.xml', async (req, res) => {
-  const origin = getPublicSiteOrigin();
-  const today = new Date().toISOString().slice(0, 10);
-  const entries = STATIC_PAGES.map((page) => urlEntry(`${origin}${page.path}`, {
-    lastmod: today,
-    changefreq: page.changefreq,
-    priority: page.priority,
-  }));
-
+router.get('/sitemap.xml', asyncHandler(async (req, res) => {
   try {
-    const hotels = await listActiveHotelsForSitemap();
-    for (const hotel of hotels) {
-      entries.push(urlEntry(`${origin}/hotel.html?id=${hotel.id}`, {
-        lastmod: toLastmod(hotel.updatedAt) || toLastmod(hotel.createdAt) || today,
-        changefreq: 'weekly',
-        priority: '0.8',
-      }));
+    const origin = getPublicSiteOrigin();
+    const today = new Date().toISOString().slice(0, 10);
+    const entries = STATIC_PAGES.map((page) => urlEntry(`${origin}${page.path}`, {
+      lastmod: today,
+      changefreq: page.changefreq,
+      priority: page.priority,
+    }));
+
+    try {
+      const hotels = await listActiveHotelsForSitemap();
+      for (const hotel of hotels) {
+        entries.push(urlEntry(`${origin}/hotel.html?id=${hotel.id}`, {
+          lastmod: toLastmod(hotel.updatedAt) || toLastmod(hotel.createdAt) || today,
+          changefreq: 'weekly',
+          priority: '0.8',
+        }));
+      }
+    } catch (err) {
+      console.error('sitemap: failed to load hotels', err.message);
     }
+
+    const xml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+      ...entries,
+      '</urlset>',
+      '',
+    ].join('\n');
+
+    res
+      .status(200)
+      .set('Content-Type', 'application/xml; charset=utf-8')
+      .set('Cache-Control', 'public, max-age=3600')
+      .send(xml);
   } catch (err) {
-    console.error('sitemap: failed to load hotels', err.message);
+    console.error('sitemap: unexpected failure', err.message);
+    const fallback = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+      urlEntry('https://www.keffirooms.ng/', { priority: '1.0' }),
+      '</urlset>',
+      '',
+    ].join('\n');
+    res
+      .status(200)
+      .set('Content-Type', 'application/xml; charset=utf-8')
+      .send(fallback);
   }
-
-  const xml = [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...entries,
-    '</urlset>',
-    '',
-  ].join('\n');
-
-  res
-    .status(200)
-    .type('application/xml; charset=utf-8')
-    .set('Cache-Control', 'public, max-age=3600')
-    .send(xml);
-});
+}));
 
 export default router;
