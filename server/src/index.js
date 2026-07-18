@@ -24,9 +24,60 @@ const legacyUploadRoot = config.upload.dir;
 
 const app = express();
 
+const isProd = config.env === 'production';
+
 app.use(helmet({
-  contentSecurityPolicy: false,
+  // Keep COEP off — Google Sign-In / third-party embeds break with it.
   crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'self'"],
+      formAction: ["'self'"],
+      // Inline onclick handlers + page <script> blocks still require unsafe-inline.
+      // External evil.com scripts are still blocked.
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        'https://accounts.google.com',
+        'https://unpkg.com',
+      ],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        'https://fonts.googleapis.com',
+        'https://unpkg.com',
+      ],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: [
+        "'self'",
+        'data:',
+        'blob:',
+        'https://res.cloudinary.com',
+        'https://*.cloudinary.com',
+        'https://*.googleusercontent.com',
+        'https://*.tile.openstreetmap.org',
+        'https://tile.openstreetmap.org',
+      ],
+      connectSrc: [
+        "'self'",
+        'https://nominatim.openstreetmap.org',
+        'https://accounts.google.com',
+        'https://oauth2.googleapis.com',
+        'https://www.googleapis.com',
+        ...(isProd ? [] : ['http://localhost:3000', 'ws://localhost:3000']),
+      ],
+      frameSrc: ["'self'", 'https://accounts.google.com'],
+      workerSrc: ["'self'", 'blob:'],
+      mediaSrc: ["'self'", 'blob:'],
+      ...(isProd ? { upgradeInsecureRequests: [] } : {}),
+    },
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 app.use(cors({
   origin(origin, callback) {

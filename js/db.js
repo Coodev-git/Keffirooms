@@ -131,7 +131,7 @@ function listingSeekerInquiryMessage(l, session = {}) {
     '- Available for viewing: [date & time]',
     `- Budget: N${fmtN(l.price)}/year`,
     '',
-    'I agree to the KeffiRooms Terms & Conditions.',
+    'I agree to the KeffiRooms Terms & Privacy.',
   ].join('\n');
 }
 

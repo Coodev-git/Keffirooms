@@ -816,7 +816,7 @@
                     </div>
                 </div>
                 <div style="font-size:.74rem;color:var(--t3);margin-bottom:14px;line-height:1.6;">Modern, trusted property listing platform for NSUK students.</div>
-                <div style="font-size:.72rem;margin-bottom:10px;"><a href="terms.html" style="color:var(--teal-l);font-weight:600;">Terms &amp; Conditions</a></div>
+                <div style="font-size:.72rem;margin-bottom:10px;"><a href="terms.html" style="color:var(--teal-l);font-weight:600;">Terms &amp; Privacy</a></div>
                 <div style="font-size:.7rem;color:var(--t4);">© 2026 KeffiRooms Inc. Built for NSUK Communities.</div>
             </div>
         </div>
@@ -827,9 +827,9 @@
                 <div class="terms-handle"></div>
                 <div class="terms-title">
                     <span class="material-symbols-rounded ms">gavel</span>
-                    Terms &amp; Data Sharing Policy
+                    Terms &amp; Privacy
                 </div>
-                <div class="terms-sub">Please read before we connect you with an agent. This takes 30 seconds.</div>
+                <div class="terms-sub">Please read our combined terms &amp; privacy before we continue. This takes 30 seconds.</div>
 
                 <div class="terms-section">
                     <div class="terms-section-title">
@@ -888,7 +888,7 @@
                 <div class="terms-actions">
                     <label class="terms-agree-row" for="terms-agree" style="margin-bottom:14px;">
                         <input type="checkbox" id="terms-agree">
-                        <span>I have read and agree to the <a href="terms.html?return=index.html%23terms-agree" onclick="event.stopPropagation(); if(pendingRole) sessionStorage.setItem('kr6_terms_pending_role', pendingRole);">Terms &amp; Conditions</a></span>
+                        <span>I have read and agree to the <a href="terms.html?return=index.html%23terms-agree" onclick="event.stopPropagation(); if(pendingRole) sessionStorage.setItem('kr6_terms_pending_role', pendingRole);">Terms &amp; Privacy</a></span>
                     </label>
                     <button class="btn-terms-accept" id="terms-accept-btn" onclick="acceptTermsAndProceed()">
                         <span class="material-symbols-rounded ms">check_circle</span>
@@ -1106,7 +1106,7 @@
             function acceptTermsAndProceed() {
                 const cb = document.getElementById('terms-agree');
                 if (!cb?.checked) {
-                    showToast('Please read and agree to the Terms & Conditions');
+                    showToast('Please read and agree to the Terms & Privacy');
                     focusTermsCheckbox('terms-agree');
                     return;
                 }

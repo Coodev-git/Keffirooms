@@ -35,7 +35,7 @@ function goPage(url) {
 function requireTermsAgreed(checkboxId) {
   const el = document.getElementById(checkboxId);
   if (!el?.checked) {
-    showToast('Please agree to the Terms & Conditions');
+    showToast('Please agree to the Terms & Privacy');
     return false;
   }
   return true;
