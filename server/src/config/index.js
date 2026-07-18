@@ -125,15 +125,24 @@ const GOOGLE_CLIENT_PLACEHOLDERS = new Set([
   'your-client-id.apps.googleusercontent.com',
   'your-client-id',
   'your-secret',
+  'client id',
+  'client secret',
+  'client_id',
+  'client_secret',
 ]);
 
 export function isGoogleConfigured() {
   const id = (config.google.clientId || '').trim();
-  return !!id && !GOOGLE_CLIENT_PLACEHOLDERS.has(id);
+  if (!id || GOOGLE_CLIENT_PLACEHOLDERS.has(id.toLowerCase())) return false;
+  // Real Web client IDs look like: 123-abc.apps.googleusercontent.com
+  return id.includes('.apps.googleusercontent.com');
 }
 
 export function isGoogleRedirectConfigured() {
-  return !!(config.google.clientId && config.google.clientSecret);
+  const secret = (config.google.clientSecret || '').trim();
+  if (!isGoogleConfigured() || !secret) return false;
+  if (GOOGLE_CLIENT_PLACEHOLDERS.has(secret.toLowerCase())) return false;
+  return true;
 }
 
 export function isGoogleDevLoginEnabled() {
