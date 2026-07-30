@@ -92,13 +92,39 @@ app.use(cors({
       }
     }
 
-    const allowed = [config.clientUrl, config.appUrl];
+    const allowed = [
+      config.clientUrl,
+      config.appUrl,
+      'https://keffirooms.ng',
+      'https://www.keffirooms.ng',
+    ].filter(Boolean);
     if (allowed.includes(origin)) return callback(null, origin);
 
     callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
 }));
+
+// SEO endpoints first — never behind API rate limits or auth middleware
+app.use(seoRoutes);
+
+// Public HTML pages must stay crawlable (no accidental X-Robots-Tag: noindex)
+app.use((req, res, next) => {
+  const pathOnly = req.path || '';
+  const isPublicHtml = pathOnly === '/'
+    || pathOnly === '/index.html'
+    || pathOnly === '/seeker.html'
+    || pathOnly === '/hotel.html'
+    || pathOnly === '/terms.html'
+    || pathOnly === '/auth-seeker.html'
+    || pathOnly === '/auth-agent.html'
+    || pathOnly === '/auth-hotel.html';
+  if (isPublicHtml) {
+    res.setHeader('X-Robots-Tag', 'index, follow');
+  }
+  next();
+});
+
 app.use(globalLimiter);
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -139,9 +165,6 @@ app.use('/api/hotels', hotelRoutes);
 app.use('/api/hotel-owner', hotelOwnerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', socialRoutes);
-
-// Public SEO endpoints (before static so they are never shadowed by files)
-app.use(seoRoutes);
 
 app.use(express.static(clientRoot, { index: 'index.html', extensions: ['html'] }));
 

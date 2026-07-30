@@ -5,20 +5,23 @@ import { listActiveHotelsForSitemap } from '../services/hotelService.js';
 
 const router = Router();
 
-/** Canonical public site origin for sitemap / robots (prefer www). */
+/**
+ * Canonical public site origin for sitemap / robots.
+ * Prefer apex keffirooms.ng — www redirects to apex in production.
+ */
 export function getPublicSiteOrigin() {
   if (process.env.SITEMAP_BASE_URL) {
     return String(process.env.SITEMAP_BASE_URL).trim().replace(/\/$/, '');
   }
-  const raw = String(config.clientUrl || config.appUrl || 'https://www.keffirooms.ng').trim();
+  const raw = String(config.clientUrl || config.appUrl || 'https://keffirooms.ng').trim();
   try {
     const url = new URL(raw);
     if (url.hostname === 'keffirooms.ng' || url.hostname === 'www.keffirooms.ng') {
-      return 'https://www.keffirooms.ng';
+      return 'https://keffirooms.ng';
     }
     return `${url.protocol}//${url.host}`.replace(/\/$/, '');
   } catch {
-    return config.isProd ? 'https://www.keffirooms.ng' : 'http://localhost:3000';
+    return config.isProd ? 'https://keffirooms.ng' : 'http://localhost:3000';
   }
 }
 
@@ -36,6 +39,34 @@ function toLastmod(value) {
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString().slice(0, 10);
+}
+
+function buildRobotsTxt(origin) {
+  return [
+    '# KeffiRooms — public crawl rules',
+    '# Homepage (/) is explicitly allowed for all crawlers.',
+    '',
+    'User-agent: *',
+    'Allow: /',
+    '',
+    'Disallow: /api/',
+    'Disallow: /admin.html',
+    'Disallow: /auth-admin.html',
+    'Disallow: /agent.html',
+    'Disallow: /hotel-owner.html',
+    'Disallow: /chat.html',
+    'Disallow: /auth-callback.html',
+    'Disallow: /reset-password.html',
+    '',
+    'User-agent: Googlebot',
+    'Allow: /',
+    '',
+    'User-agent: Googlebot-Image',
+    'Allow: /',
+    '',
+    `Sitemap: ${origin}/sitemap.xml`,
+    '',
+  ].join('\n');
 }
 
 /** Public marketing / browse pages only — not dashboards or auth callbacks. */
@@ -60,28 +91,12 @@ function urlEntry(loc, { lastmod, changefreq, priority } = {}) {
 
 router.get('/robots.txt', (req, res) => {
   const origin = getPublicSiteOrigin();
-  const body = [
-    'User-agent: *',
-    'Allow: /',
-    '',
-    'Disallow: /api/',
-    'Disallow: /admin.html',
-    'Disallow: /auth-admin.html',
-    'Disallow: /agent.html',
-    'Disallow: /hotel-owner.html',
-    'Disallow: /chat.html',
-    'Disallow: /auth-callback.html',
-    'Disallow: /reset-password.html',
-    '',
-    `Sitemap: ${origin}/sitemap.xml`,
-    '',
-  ].join('\n');
-
   res
     .status(200)
-    .type('text/plain; charset=utf-8')
-    .set('Cache-Control', 'public, max-age=3600')
-    .send(body);
+    .set('Content-Type', 'text/plain; charset=utf-8')
+    // Short cache so crawlers re-check quickly after deploys / wake-ups
+    .set('Cache-Control', 'public, max-age=300, must-revalidate')
+    .send(buildRobotsTxt(origin));
 });
 
 router.get('/sitemap.xml', asyncHandler(async (req, res) => {
@@ -125,7 +140,7 @@ router.get('/sitemap.xml', asyncHandler(async (req, res) => {
     const fallback = [
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-      urlEntry('https://www.keffirooms.ng/', { priority: '1.0' }),
+      urlEntry('https://keffirooms.ng/', { priority: '1.0' }),
       '</urlset>',
       '',
     ].join('\n');

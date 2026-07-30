@@ -1,0 +1,22 @@
+# KeffiRooms — public crawl rules
+# Homepage and public pages are allowed. Private dashboards and API are not.
+
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /admin.html
+Disallow: /auth-admin.html
+Disallow: /agent.html
+Disallow: /hotel-owner.html
+Disallow: /chat.html
+Disallow: /auth-callback.html
+Disallow: /reset-password.html
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+Sitemap: https://keffirooms.ng/sitemap.xml
