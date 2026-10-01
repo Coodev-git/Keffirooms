@@ -143,11 +143,15 @@ export async function createListing(agentId, data, photoRecords) {
     for (let idx = 0; idx < photoRecords.length; idx++) {
       const p = photoRecords[idx];
       await client.query(
-        `INSERT INTO listing_photos (listing_id, url, sort_order, gps_lat, gps_lng, gps_acc, device, captured_at, metadata)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        `INSERT INTO listing_photos (listing_id, url, public_id, width, height, format, sort_order, gps_lat, gps_lng, gps_acc, device, captured_at, metadata)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
         [
           listing.id,
           p.url,
+          p.public_id || null,
+          p.width || null,
+          p.height || null,
+          p.format || null,
           idx,
           p.gps_lat || null,
           p.gps_lng || null,

@@ -233,12 +233,16 @@ router.post(
       ));
     }
 
-    const secureUrls = await uploadListingImages(req.files);
+    const uploadResults = await uploadListingImages(req.files);
 
-    const photoRecords = secureUrls.map((url, i) => {
+    const photoRecords = uploadResults.map((result, i) => {
       const m = meta[i] || {};
       return {
-        url,
+        url: result.secure_url,
+        public_id: result.public_id || null,
+        width: result.width || null,
+        height: result.height || null,
+        format: result.format || null,
         gps_lat: m.gps_lat || null,
         gps_lng: m.gps_lng || null,
         gps_acc: m.gps_acc || null,

@@ -26,6 +26,10 @@ function ensureConfigured() {
   }
 }
 
+/**
+ * Upload a buffer to Cloudinary and return full image metadata.
+ * @returns {{ secure_url, public_id, width, height, format }}
+ */
 function uploadBuffer(buffer, folder) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -39,7 +43,13 @@ function uploadBuffer(buffer, folder) {
         if (!result?.secure_url) {
           return reject(new Error('Cloudinary did not return a secure_url'));
         }
-        resolve(result.secure_url);
+        resolve({
+          secure_url: result.secure_url,
+          public_id: result.public_id,
+          width: result.width,
+          height: result.height,
+          format: result.format,
+        });
       }
     );
     stream.end(buffer);
@@ -49,16 +59,26 @@ function uploadBuffer(buffer, folder) {
 async function uploadImagesLocalDev(files, localSubdir) {
   const dir = path.join(config.upload.dir, localSubdir);
   fs.mkdirSync(dir, { recursive: true });
-  const urls = [];
+  const results = [];
   for (const file of files) {
     const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
     const name = `${Date.now()}-${crypto.randomBytes(16).toString('hex')}${ext}`;
     fs.writeFileSync(path.join(dir, name), file.buffer);
-    urls.push(`/uploads/${localSubdir}/${name}`);
+    results.push({
+      secure_url: `/uploads/${localSubdir}/${name}`,
+      public_id: null,
+      width: null,
+      height: null,
+      format: ext.slice(1),
+    });
   }
-  return urls;
+  return results;
 }
 
+/**
+ * Upload files to Cloudinary (or local dev fallback).
+ * @returns {Array<{ secure_url, public_id, width, height, format }>}
+ */
 async function uploadImagesToFolder(files, folder, localSubdir) {
   if (!files?.length) {
     throw new AppError('No images to upload', 400, 'PHOTOS_REQUIRED');
@@ -76,8 +96,8 @@ async function uploadImagesToFolder(files, folder, localSubdir) {
   const results = [];
   for (const file of files) {
     try {
-      const secureUrl = await uploadBuffer(file.buffer, folder);
-      results.push(secureUrl);
+      const result = await uploadBuffer(file.buffer, folder);
+      results.push(result);
     } catch (err) {
       console.error('Cloudinary upload failed:', err.message);
       throw new AppError(
@@ -90,7 +110,7 @@ async function uploadImagesToFolder(files, folder, localSubdir) {
   return results;
 }
 
-/** Upload listing photos; production uses Cloudinary secure_url only */
+/** Upload listing photos; returns full Cloudinary metadata per image */
 export async function uploadListingImages(files) {
   return uploadImagesToFolder(files, config.cloudinary.listingFolder, 'listings');
 }
@@ -99,4 +119,54 @@ export async function uploadListingImages(files) {
 export async function uploadHotelImages(files) {
   const folder = process.env.CLOUDINARY_HOTEL_FOLDER || 'keffirooms/hotels';
   return uploadImagesToFolder(files, folder, 'hotels');
+}
+
+/**
+ * Generate signed parameters for direct browser → Cloudinary upload.
+ * The api_secret is NEVER included in the response.
+ *
+ * @param {object} [opts]
+ * @param {string} [opts.folder] — override default listing folder
+ * @returns {{ cloudName, apiKey, timestamp, signature, folder }}
+ */
+export function generateUploadSignature({ folder } = {}) {
+  ensureConfigured();
+
+  const timestamp = Math.round(Date.now() / 1000);
+  const uploadFolder = folder || config.cloudinary.listingFolder;
+
+  // Parameters that must be included in the signature
+  const params = {
+    timestamp,
+    folder: uploadFolder,
+  };
+
+  const signature = cloudinary.utils.api_sign_request(
+    params,
+    config.cloudinary.apiSecret
+  );
+
+  return {
+    cloudName: config.cloudinary.cloudName,
+    apiKey: config.cloudinary.apiKey,
+    timestamp,
+    signature,
+    folder: uploadFolder,
+  };
+}
+
+/**
+ * Delete an image from Cloudinary by public_id.
+ * Gracefully handles missing public_id (legacy/local uploads).
+ */
+export async function deleteCloudinaryImage(publicId) {
+  if (!publicId) return null;
+  ensureConfigured();
+  try {
+    const result = await cloudinary.uploader.destroy(publicId);
+    return result;
+  } catch (err) {
+    console.error(`Cloudinary delete failed for ${publicId}:`, err.message);
+    return null;
+  }
 }

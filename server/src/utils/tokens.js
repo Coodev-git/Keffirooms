@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { config } from '../config/index.js';
 import { resolvePhotoUrl } from './photoUrl.js';
+import { photoWithTransforms } from './cloudinaryUrl.js';
 
 export function signAccessToken(payload) {
   return jwt.sign(payload, config.jwt.accessSecret, {
@@ -70,7 +71,13 @@ export function listingToClient(row, photos = [], opts = {}) {
     agentName: row.agent_name,
     agentPhone: row.agent_phone,
     agentRole: 'Agent',
+    // Backward-compatible: flat array of original URLs
     photos: photos.map((p) => resolvePhotoUrl(p.url)),
+    // New: optimized image variants (thumbnail, card, detail, original)
+    photoImages: photos.map((p) => photoWithTransforms({
+      url: resolvePhotoUrl(p.url),
+      public_id: p.public_id,
+    })),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
