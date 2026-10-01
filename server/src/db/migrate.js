@@ -8,8 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const { Pool } = pg;
 
 function needsSsl(url) {
-  return /neon\.tech/i.test(url)
-    || /sslmode=require/i.test(url)
+  // Enable SSL when the connection string says so or DATABASE_SSL=true is set.
+  // Never matches on a provider name — works with any PostgreSQL host.
+  return /sslmode=require/i.test(url || '')
     || process.env.DATABASE_SSL === 'true';
 }
 

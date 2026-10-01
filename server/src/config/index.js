@@ -13,18 +13,11 @@ function required(name, fallback) {
   return v;
 }
 
-const defaultAppUrl = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
+const defaultAppUrl = process.env.APP_URL?.trim() || 'http://localhost:3000';
 
-function resolvePublicUrl(name, fallback = defaultAppUrl) {
+function resolvePublicUrl(name) {
   const value = process.env[name]?.trim();
-  if (!value) return fallback;
-  // Ignore localhost URLs pasted from local .env when Render provides the live URL
-  if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(value)) {
-      return process.env.RENDER_EXTERNAL_URL;
-    }
-  }
-  return value;
+  return value || defaultAppUrl;
 }
 
 const appUrl = resolvePublicUrl('APP_URL');
@@ -79,6 +72,8 @@ export const config = {
     apiKey: process.env.CLOUDINARY_API_KEY || '',
     apiSecret: process.env.CLOUDINARY_API_SECRET || '',
     listingFolder: process.env.CLOUDINARY_LISTING_FOLDER || 'keffirooms/listings',
+    // CDN origin used in CSP — override if you switch image providers
+    cdnOrigin: process.env.IMAGE_CDN_ORIGIN || 'https://res.cloudinary.com',
   },
   smtp: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',

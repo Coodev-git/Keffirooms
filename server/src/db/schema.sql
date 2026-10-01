@@ -96,6 +96,10 @@ CREATE TABLE IF NOT EXISTS listing_photos (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   listing_id   UUID NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
   url          TEXT NOT NULL,
+  public_id    VARCHAR(255),
+  width        INTEGER,
+  height       INTEGER,
+  format       VARCHAR(20),
   sort_order   SMALLINT NOT NULL DEFAULT 0,
   gps_lat      DECIMAL(10, 6),
   gps_lng      DECIMAL(10, 6),
@@ -107,6 +111,8 @@ CREATE TABLE IF NOT EXISTS listing_photos (
 );
 
 CREATE INDEX IF NOT EXISTS idx_listing_photos_listing ON listing_photos(listing_id);
+CREATE INDEX IF NOT EXISTS idx_listing_photos_public_id ON listing_photos(public_id) WHERE public_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_listing_photos_sort ON listing_photos(listing_id, sort_order);
 
 -- ── FAVORITES (saved listings) ──
 CREATE TABLE IF NOT EXISTS favorites (
@@ -431,3 +437,17 @@ CREATE INDEX IF NOT EXISTS idx_hotels_pin ON hotels(pin_lat, pin_lng);
 
 -- Owner-submitted hotels start inactive until admin verifies
 UPDATE hotels SET verify_status = 'verified' WHERE verify_status IS NULL;
+
+-- Upgrade: listing_photos Cloudinary metadata & dimensions
+ALTER TABLE listing_photos ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);
+ALTER TABLE listing_photos ADD COLUMN IF NOT EXISTS width INTEGER;
+ALTER TABLE listing_photos ADD COLUMN IF NOT EXISTS height INTEGER;
+ALTER TABLE listing_photos ADD COLUMN IF NOT EXISTS format VARCHAR(20);
+CREATE INDEX IF NOT EXISTS idx_listing_photos_public_id ON listing_photos(public_id) WHERE public_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_listing_photos_sort ON listing_photos(listing_id, sort_order);
+
+-- Upgrade: multi-predicate search composite index
+CREATE INDEX IF NOT EXISTS idx_listings_search_composite
+  ON listings (status, area, price, created_at DESC)
+  WHERE status IN ('verified', 'pending');
+

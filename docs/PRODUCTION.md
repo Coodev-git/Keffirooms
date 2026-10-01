@@ -97,6 +97,27 @@ Use the included [`render.yaml`](../render.yaml). After connecting the repo:
 - Agent register, listing upload (Cloudinary)
 - Student email login + Google (if configured)
 
+## 8. Backup & Recovery
+
+KeffiRooms relies on standard PostgreSQL backups. **Do not rely solely on your hosting provider's automated backups.** You should periodically export your database.
+
+### Exporting data
+To run a full backup of your production database to your local machine:
+```bash
+cd server
+npm run db:backup
+```
+*Note: This requires `pg_dump` installed locally and `DATABASE_URL` set in `server/.env`.*
+
+### Restoring data to a new host
+If you migrate to a new database provider:
+1. Update `DATABASE_URL` in your `.env` to point to the new empty database.
+2. Run `npm run db:migrate` to create the tables.
+3. Restore the data:
+```bash
+pg_restore -d "$DATABASE_URL" --no-owner --no-acl keffirooms-backup-TIMESTAMP.dump
+```
+
 ## Local development
 
 Keep `NODE_ENV=development` in `server/.env`. Production checks are skipped; dev Google email sign-in works when `GOOGLE_CLIENT_ID` is empty.

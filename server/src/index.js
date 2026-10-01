@@ -60,8 +60,9 @@ app.use(helmet({
         "'self'",
         'data:',
         'blob:',
-        'https://res.cloudinary.com',
-        'https://*.cloudinary.com',
+        // Image CDN origin — configurable via IMAGE_CDN_ORIGIN env var
+        config.cloudinary.cdnOrigin,
+        `${config.cloudinary.cdnOrigin.replace(/^https:\/\//, 'https://*.')}`,
         'https://*.googleusercontent.com',
         'https://*.tile.openstreetmap.org',
         'https://tile.openstreetmap.org',
@@ -175,7 +176,7 @@ app.use(express.static(clientRoot, { index: 'index.html', extensions: ['html'] }
 app.use(notFound);
 app.use(errorHandler);
 
-app.listen(config.port, async () => {
+const server = app.listen(config.port, async () => {
   console.log(`KeffiRooms server running at ${config.appUrl}`);
   console.log(`Environment: ${config.env}`);
   console.log(`Open in browser: ${config.appUrl}`);
@@ -206,7 +207,7 @@ app.listen(config.port, async () => {
     if (isGoogleDevLoginEnabled()) {
       console.log('Google sign-in: dev email login enabled (set GOOGLE_CLIENT_ID for real OAuth)');
     } else {
-      console.error('\n⚠️  GOOGLE SIGN-IN NOT CONFIGURED — “Continue with Google” will not work.');
+      console.error('\n⚠️  GOOGLE SIGN-IN NOT CONFIGURED — "Continue with Google" will not work.');
       console.error('   1. Create OAuth credentials: https://console.cloud.google.com/apis/credentials');
       console.error('   2. Add authorized JavaScript origin: http://localhost:3000');
       console.error('   3. Set GOOGLE_CLIENT_ID in server/.env (and GOOGLE_CLIENT_SECRET for redirect fallback)');
@@ -216,3 +217,31 @@ app.listen(config.port, async () => {
     console.log(`Google sign-in: ready (client ID set)`);
   }
 });
+
+/**
+ * Graceful shutdown — closes the HTTP server and drains the DB pool before
+ * exiting. This ensures in-flight requests finish and open transactions are
+ * not silently aborted when the host sends SIGTERM (e.g. on every deploy).
+ */
+async function shutdown(signal) {
+  console.log(`\n${signal} received — shutting down gracefully...`);
+  server.close(async () => {
+    try {
+      await pool.end();
+      console.log('Database pool closed.');
+    } catch (err) {
+      console.error('Error closing DB pool:', err.message);
+    }
+    process.exit(0);
+  });
+
+  // Force-exit if graceful shutdown takes too long (safety net)
+  setTimeout(() => {
+    console.error('Graceful shutdown timed out — forcing exit.');
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
+
